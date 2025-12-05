@@ -161,10 +161,41 @@ fetch(API_URL + "/messages")
         const marker = L.marker([m.latitude, m.longitude]).addTo(map);
 
         marker.bindPopup(`
-            <strong>${m.name}</strong><br>
-            ${m.message}<br>
-            ${m.emoji}
-        `);
+    <div style="
+        background: rgba(0,0,0,0.85);
+        padding: 16px;
+        border-radius: 12px;
+        color: white;
+        width: 240px;
+        font-family: Arial, sans-serif;
+        text-align: left;
+        border: 1px solid rgba(255,255,255,0.12);
+    ">
+        
+        <div style="font-size: 1.4rem; margin-bottom: 6px;">
+            ${m.emoji} &nbsp; <strong>${m.name}</strong>
+        </div>
+
+        <div style="
+            font-size: 1rem;
+            opacity: 0.85;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        ">
+            "${m.message}"
+        </div>
+
+        <div style="
+            font-size: 0.85rem;
+            opacity: 0.5;
+            text-align: right;
+        ">
+            ${m.country}
+        </div>
+
+    </div>
+`);
+
 
         // If new → apply flash animation
         if (isNew) {
