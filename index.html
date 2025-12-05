@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Last Words</title>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: "Arial", sans-serif;
+            color: #fff;
+        }
+
+        /* Fondo estilo globo */
+        #background-map {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url("https://tiles.stadiamaps.com/tiles/stamen_toner_background/5/10/12.png");
+            opacity: 0.18;
+            background-size: cover;
+            filter: blur(3px);
+            animation: move 40s linear infinite;
+        }
+
+        @keyframes move {
+            0% { transform: scale(1) translate(0,0); }
+            50% { transform: scale(1.15) translate(-10px, 10px); }
+            100% { transform: scale(1) translate(0,0); }
+        }
+
+        /* Contenido */
+        #content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            top: 38%;
+            transform: translateY(-50%);
+            padding: 0 20px;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 1rem;
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 26px;
+            font-size: 1.1rem;
+            background: #fff;
+            color: #000;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+            transition: 0.25s;
+        }
+
+        .btn:hover {
+            background: #e2e2e2;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="background-map"></div>
+
+    <div id="content">
+        <h1>Last Words</h1>
+        <p>Deja un mensaje en cualquier lugar del mundo. Un último pensamiento, un recuerdo, una despedida.</p>
+        <button class="btn" onclick="location.href='map.html'">Entrar al Mapa</button>
+    </div>
+
+</body>
+</html>
