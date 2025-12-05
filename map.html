@@ -145,16 +145,53 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19
 }).addTo(map);
 
-/* LOAD MARKERS */
+/* LOAD MARKERS WITH FLASH EFFECT */
 fetch(API_URL + "/messages")
 .then(r => r.json())
 .then(messages => {
     messages.forEach(m => {
-        L.marker([m.latitude, m.longitude])
-          .addTo(map)
-          .bindPopup(`<strong>${m.name}</strong><br>${m.message}<br>${m.emoji}`);
+
+        // Determine if message is NEW (under 5 seconds old)
+        const createdTime = new Date(m.created_at);
+        const now = new Date();
+        const diffSeconds = (now - createdTime) / 1000;
+        const isNew = diffSeconds < 5;
+
+        // Create marker
+        const marker = L.marker([m.latitude, m.longitude]).addTo(map);
+
+        marker.bindPopup(`
+            <strong>${m.name}</strong><br>
+            ${m.message}<br>
+            ${m.emoji}
+        `);
+
+        // If new → apply flash animation
+        if (isNew) {
+            const icon = marker._icon;
+
+            icon.style.transition = "filter 0.3s ease";
+            icon.style.filter = "brightness(2.5)";
+
+            let flashes = 0;
+            const flashInterval = setInterval(() => {
+                flashes++;
+
+                // toggle brightness
+                icon.style.filter = (icon.style.filter === "brightness(1)") 
+                    ? "brightness(2.5)" 
+                    : "brightness(1)";
+
+                if (flashes >= 6) { 
+                    clearInterval(flashInterval);
+                    icon.style.filter = "brightness(1)";
+                }
+            }, 350);
+        }
+
     });
 });
+
 
 /* MOBILE FORM FUNCTIONS */
 function openMobileForm() {
