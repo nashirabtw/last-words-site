@@ -20,6 +20,7 @@
         color: white;
         font-family: "Inter", Arial, sans-serif;
         text-align: center;
+        padding: 0 20px; /* Padding para evitar recortes en móvil */
     }
 
     /* Floating particle effect */
@@ -76,3 +77,76 @@
         cursor: pointer;
         opacity: 0;
         animation: fadeIn 2s ease forwards;
+        animation-delay: 0.9s;
+        transition: 0.3s;
+    }
+
+    .btn:hover {
+        background: #eaeaea;
+        transform: translateY(-2px);
+    }
+
+    /* =============================================
+       MOBILE RESPONSIVE DESIGN
+       ============================================= */
+    @media (max-width: 600px) {
+        h1 {
+            font-size: 1.9rem;
+            margin-top: -40px;
+        }
+
+        p {
+            font-size: 0.95rem;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 26px;
+            font-size: 1rem;
+        }
+
+        .particle {
+            opacity: 0.3;
+            width: 1.5px;
+            height: 1.5px;
+        }
+    }
+
+    @media (max-width: 380px) {
+        h1 {
+            font-size: 1.6rem;
+        }
+        p {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<!-- Cinematic floating particles -->
+<script>
+for (let i = 0; i < 50; i++) {
+    let p = document.createElement("div");
+    p.classList.add("particle");
+    p.style.left = Math.random() * 100 + "vw";
+    p.style.top = Math.random() * 100 + "vh";
+    p.style.animationDuration = (5 + Math.random() * 8) + "s";
+    p.style.animationDelay = Math.random() * 5 + "s";
+    document.body.appendChild(p);
+}
+</script>
+
+<h1>Last-Words</h1>
+
+<p>
+    A message left somewhere in the world.  
+    A final thought, a memory, a goodbye —  
+    held gently inside a single, quiet moment.
+</p>
+
+<a href="map.html" class="btn">Enter the Map</a>
+
+</body>
+</html>
