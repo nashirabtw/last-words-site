@@ -50,6 +50,7 @@
         font-size: 1rem;
         border: none;
         cursor: pointer;
+        z-index: 9999;
     }
 
     /* ===== MOBILE SLIDE-UP FORM ===== */
@@ -64,6 +65,7 @@
         border-top-left-radius: 16px;
         border-top-right-radius: 16px;
         color: white;
+        z-index: 9999;
     }
 
     #mobileForm input, 
@@ -99,6 +101,90 @@
             display: block;
         }
     }
+
+    /* =============================================
+       CUSTOM POPUP STYLES (Cinematic + Poetic Card)
+       ============================================= */
+
+    .custom-popup .leaflet-popup-content-wrapper {
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .custom-popup .leaflet-popup-content {
+        margin: 0 !important;
+    }
+
+    /* Card container */
+    .popup-card {
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(6px);
+        color: white;
+        width: 260px;
+        padding: 18px;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,0.12);
+        animation: fadeSlide 0.4s ease forwards;
+    }
+
+    /* Header: emoji + name */
+    .popup-header {
+        font-size: 1.3rem;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .popup-emoji {
+        font-size: 1.4rem;
+    }
+
+    .popup-name {
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+
+    /* Message text */
+    .popup-message {
+        opacity: 0.85;
+        font-size: 1rem;
+        line-height: 1.4;
+        margin-bottom: 14px;
+        font-style: italic;
+    }
+
+    /* Country in corner */
+    .popup-country {
+        font-size: 0.85rem;
+        opacity: 0.55;
+        text-align: right;
+        margin-bottom: 6px;
+    }
+
+    /* Bottom divider */
+    .popup-bottom-line {
+        height: 1px;
+        width: 100%;
+        background: linear-gradient(
+            to right, 
+            rgba(255,255,255,0.2), 
+            rgba(255,255,255,0.03)
+        );
+    }
+
+    /* Smooth cinematic animation */
+    @keyframes fadeSlide {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
 </style>
 </head>
 
@@ -145,71 +231,48 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19
 }).addTo(map);
 
-/* LOAD MARKERS WITH FLASH EFFECT */
+/* LOAD MARKERS WITH FLASH AND CUSTOM POPUP */
 fetch(API_URL + "/messages")
 .then(r => r.json())
 .then(messages => {
     messages.forEach(m => {
 
-        // Determine if message is NEW (under 5 seconds old)
         const createdTime = new Date(m.created_at);
         const now = new Date();
         const diffSeconds = (now - createdTime) / 1000;
         const isNew = diffSeconds < 5;
 
-        // Create marker
         const marker = L.marker([m.latitude, m.longitude]).addTo(map);
 
         marker.bindPopup(`
-    <div style="
-        background: rgba(0,0,0,0.85);
-        padding: 16px;
-        border-radius: 12px;
-        color: white;
-        width: 240px;
-        font-family: Arial, sans-serif;
-        text-align: left;
-        border: 1px solid rgba(255,255,255,0.12);
-    ">
-        
-        <div style="font-size: 1.4rem; margin-bottom: 6px;">
-            ${m.emoji} &nbsp; <strong>${m.name}</strong>
-        </div>
+            <div class="popup-card">
+                <div class="popup-header">
+                    <span class="popup-emoji">${m.emoji}</span>
+                    <span class="popup-name">${m.name}</span>
+                </div>
 
-        <div style="
-            font-size: 1rem;
-            opacity: 0.85;
-            line-height: 1.4;
-            margin-bottom: 10px;
-        ">
-            "${m.message}"
-        </div>
+                <div class="popup-message">
+                    “${m.message}”
+                </div>
 
-        <div style="
-            font-size: 0.85rem;
-            opacity: 0.5;
-            text-align: right;
-        ">
-            ${m.country}
-        </div>
+                <div class="popup-country">
+                    ${m.country}
+                </div>
 
-    </div>
-`);
+                <div class="popup-bottom-line"></div>
+            </div>
+        `, { className: "custom-popup" });
 
-
-        // If new → apply flash animation
         if (isNew) {
             const icon = marker._icon;
-
             icon.style.transition = "filter 0.3s ease";
             icon.style.filter = "brightness(2.5)";
 
             let flashes = 0;
             const flashInterval = setInterval(() => {
                 flashes++;
-
-                // toggle brightness
-                icon.style.filter = (icon.style.filter === "brightness(1)") 
+                icon.style.filter = 
+                    icon.style.filter === "brightness(1)" 
                     ? "brightness(2.5)" 
                     : "brightness(1)";
 
@@ -223,7 +286,6 @@ fetch(API_URL + "/messages")
     });
 });
 
-
 /* MOBILE FORM FUNCTIONS */
 function openMobileForm() {
     document.getElementById("mobileForm").style.display = "block";
@@ -233,7 +295,7 @@ function closeMobileForm() {
     document.getElementById("mobileForm").style.display = "none";
 }
 
-/* PAYMENT */
+/* PAYMENT PLACEHOLDERS */
 function startPayment() {
     alert("Payment placeholder: integrate PayPal here.");
 }
