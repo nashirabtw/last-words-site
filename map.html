@@ -40,7 +40,6 @@
         z-index: 9999;
     }
 
-    /* PayPal Button container */
     #paypal-button-container,
     #paypal-button-container-mobile {
         margin-top: 15px;
@@ -283,10 +282,8 @@ function closeMobileForm() {
 }
 
 /* ===========================
-   PAYPAL INTEGRATION
+   PAYPAL — DESKTOP
    =========================== */
-
-/* DESKTOP BUTTON */
 paypal.Buttons({
     createOrder: function(data, actions) {
         return actions.order.create({
@@ -326,7 +323,9 @@ paypal.Buttons({
     }
 }).render("#paypal-button-container");
 
-/* MOBILE BUTTON */
+/* ===========================
+   PAYPAL — MOBILE
+   =========================== */
 paypal.Buttons({
     createOrder: function(data, actions) {
         return actions.order.create({
@@ -366,7 +365,71 @@ paypal.Buttons({
     }
 }).render("#paypal-button-container-mobile");
 
+
+/* ===============================================
+   TEST MODE (NO PAYMENT)
+   =============================================== */
+
+function testPayment() {
+    alert("TEST MODE: Simulando pago…");
+
+    fetch(API_URL + "/payment-success", { method: "POST" })
+    .then(r => r.json())
+    .then(res => {
+        const token = res.token;
+
+        const name =
+            document.getElementById("m_name")?.value ||
+            document.getElementById("name").value;
+
+        const message =
+            document.getElementById("m_message")?.value ||
+            document.getElementById("message").value;
+
+        const country =
+            document.getElementById("m_country")?.value ||
+            document.getElementById("country").value;
+
+        const emoji =
+            document.getElementById("m_emoji")?.value ||
+            document.getElementById("emoji").value;
+
+        const payload = { name, message, country, emoji };
+
+        fetch(API_URL + "/send-message", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-payment-token": token
+            },
+            body: JSON.stringify(payload)
+        }).then(() => {
+            alert("Mensaje enviado (MODO TEST)");
+            location.reload();
+        });
+    });
+}
 </script>
+
+<!-- TEST MODE BUTTON -->
+<button id="testModeBtn"
+style="
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: #222;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    opacity: 0.4;
+    border: none;
+    cursor: pointer;
+    z-index: 99999;
+"
+onclick="testPayment()">
+TEST MODE
+</button>
 
 </body>
 </html>
