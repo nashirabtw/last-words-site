@@ -8,6 +8,9 @@
 <!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
+<!-- PayPal JS SDK -->
+<script src="https://www.paypal.com/sdk/js?client-id=AcdSyl1qm3V9VXGilsp5CRfod_JcevcSMcrsU05bLfs68cIpGaqoc-Zc_VJF2kL_8WdBUM72b5h29Btr&currency=USD"></script>
+
 <style>
     body, html {
         margin: 0;
@@ -34,6 +37,13 @@
         padding: 20px;
         color: white;
         overflow-y: auto;
+        z-index: 9999;
+    }
+
+    /* PayPal Button container */
+    #paypal-button-container,
+    #paypal-button-container-mobile {
+        margin-top: 15px;
     }
 
     /* ===== MOBILE FLOATING BUTTON ===== */
@@ -80,18 +90,6 @@
         font-size: 1rem;
     }
 
-    #mobileForm button,
-    #formContainer button {
-        margin-top: 15px;
-        width: 100%;
-        padding: 12px;
-        background: white;
-        border: none;
-        font-size: 1rem;
-        border-radius: 8px;
-        cursor: pointer;
-    }
-
     /* ===== MOBILE BREAKPOINT ===== */
     @media (max-width: 768px) {
         #formContainer {
@@ -103,9 +101,8 @@
     }
 
     /* =============================================
-       CUSTOM POPUP STYLES (Cinematic + Poetic Card)
+       CUSTOM POPUP (Cinematic + Poetic Card)
        ============================================= */
-
     .custom-popup .leaflet-popup-content-wrapper {
         background: transparent !important;
         box-shadow: none !important;
@@ -115,7 +112,6 @@
         margin: 0 !important;
     }
 
-    /* Card container */
     .popup-card {
         background: rgba(0,0,0,0.85);
         backdrop-filter: blur(6px);
@@ -127,7 +123,6 @@
         animation: fadeSlide 0.4s ease forwards;
     }
 
-    /* Header: emoji + name */
     .popup-header {
         font-size: 1.3rem;
         margin-bottom: 8px;
@@ -145,7 +140,6 @@
         font-size: 1.1rem;
     }
 
-    /* Message text */
     .popup-message {
         opacity: 0.85;
         font-size: 1rem;
@@ -154,7 +148,6 @@
         font-style: italic;
     }
 
-    /* Country in corner */
     .popup-country {
         font-size: 0.85rem;
         opacity: 0.55;
@@ -162,7 +155,6 @@
         margin-bottom: 6px;
     }
 
-    /* Bottom divider */
     .popup-bottom-line {
         height: 1px;
         width: 100%;
@@ -173,16 +165,9 @@
         );
     }
 
-    /* Smooth cinematic animation */
     @keyframes fadeSlide {
-        from {
-            opacity: 0;
-            transform: translateY(8px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
 </style>
@@ -200,7 +185,8 @@
     <textarea id="message" rows="3" placeholder="Your message"></textarea>
     <input id="country" placeholder="Country">
     <input id="emoji" placeholder="Emoji (example: ❤️)">
-    <button onclick="startPayment()">Pay & Send</button>
+
+    <div id="paypal-button-container"></div>
 </div>
 
 <!-- Mobile Floating Button -->
@@ -215,7 +201,8 @@
     <input id="m_country" placeholder="Country">
     <input id="m_emoji" placeholder="Emoji">
 
-    <button onclick="startPaymentMobile()">Pay & Send</button>
+    <div id="paypal-button-container-mobile"></div>
+
     <button style="background:#444;color:white;margin-top:8px;" onclick="closeMobileForm()">Close</button>
 </div>
 
@@ -231,7 +218,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19
 }).addTo(map);
 
-/* LOAD MARKERS WITH FLASH AND CUSTOM POPUP */
+/* LOAD MARKERS + POPUPS + FLASH */
 fetch(API_URL + "/messages")
 .then(r => r.json())
 .then(messages => {
@@ -266,14 +253,14 @@ fetch(API_URL + "/messages")
         if (isNew) {
             const icon = marker._icon;
             icon.style.transition = "filter 0.3s ease";
-            icon.style.filter = "brightness(2.5)";
+            icon.style.filter = "brightness(2.2)";
 
             let flashes = 0;
             const flashInterval = setInterval(() => {
                 flashes++;
-                icon.style.filter = 
-                    icon.style.filter === "brightness(1)" 
-                    ? "brightness(2.5)" 
+                icon.style.filter =
+                    icon.style.filter === "brightness(1)"
+                    ? "brightness(2.2)"
                     : "brightness(1)";
 
                 if (flashes >= 6) { 
@@ -286,7 +273,7 @@ fetch(API_URL + "/messages")
     });
 });
 
-/* MOBILE FORM FUNCTIONS */
+/* MOBILE FORM */
 function openMobileForm() {
     document.getElementById("mobileForm").style.display = "block";
 }
@@ -295,14 +282,90 @@ function closeMobileForm() {
     document.getElementById("mobileForm").style.display = "none";
 }
 
-/* PAYMENT PLACEHOLDERS */
-function startPayment() {
-    alert("Payment placeholder: integrate PayPal here.");
-}
+/* ===========================
+   PAYPAL INTEGRATION
+   =========================== */
 
-function startPaymentMobile() {
-    alert("Payment placeholder: integrate PayPal for mobile.");
-}
+/* DESKTOP BUTTON */
+paypal.Buttons({
+    createOrder: function(data, actions) {
+        return actions.order.create({
+            purchase_units: [{
+                amount: { value: "10.00" }
+            }]
+        });
+    },
+    onApprove: function(data, actions) {
+        return actions.order.capture().then(function() {
+            
+            fetch(API_URL + "/payment-success", { method: "POST" })
+            .then(r => r.json())
+            .then(res => {
+                const token = res.token;
+
+                const payload = {
+                    name: document.getElementById("name").value,
+                    message: document.getElementById("message").value,
+                    country: document.getElementById("country").value,
+                    emoji: document.getElementById("emoji").value
+                };
+
+                fetch(API_URL + "/send-message", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-payment-token": token
+                    },
+                    body: JSON.stringify(payload)
+                }).then(() => {
+                    alert("Message added!");
+                    location.reload();
+                });
+            });
+        });
+    }
+}).render("#paypal-button-container");
+
+/* MOBILE BUTTON */
+paypal.Buttons({
+    createOrder: function(data, actions) {
+        return actions.order.create({
+            purchase_units: [{
+                amount: { value: "10.00" }
+            }]
+        });
+    },
+    onApprove: function(data, actions) {
+        return actions.order.capture().then(function() {
+            
+            fetch(API_URL + "/payment-success", { method: "POST" })
+            .then(r => r.json())
+            .then(res => {
+                const token = res.token;
+
+                const payload = {
+                    name: document.getElementById("m_name").value,
+                    message: document.getElementById("m_message").value,
+                    country: document.getElementById("m_country").value,
+                    emoji: document.getElementById("m_emoji").value
+                };
+
+                fetch(API_URL + "/send-message", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-payment-token": token
+                    },
+                    body: JSON.stringify(payload)
+                }).then(() => {
+                    alert("Message added!");
+                    location.reload();
+                });
+            });
+        });
+    }
+}).render("#paypal-button-container-mobile");
+
 </script>
 
 </body>
