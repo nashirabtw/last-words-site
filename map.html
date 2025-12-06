@@ -25,7 +25,7 @@
         height: 100%;
     }
 
-    /* ===== DESKTOP FORM ===== */
+    /* Desktop Form */
     #formContainer {
         position: absolute;
         top: 0;
@@ -45,7 +45,7 @@
         margin-top: 15px;
     }
 
-    /* ===== MOBILE FLOATING BUTTON ===== */
+    /* Mobile Button */
     #mobileBtn {
         display: none;
         position: fixed;
@@ -62,7 +62,7 @@
         z-index: 9999;
     }
 
-    /* ===== MOBILE SLIDE-UP FORM ===== */
+    /* Mobile Form */
     #mobileForm {
         display: none;
         position: fixed;
@@ -89,19 +89,13 @@
         font-size: 1rem;
     }
 
-    /* ===== MOBILE BREAKPOINT ===== */
+    /* Mobile Breakpoint */
     @media (max-width: 768px) {
-        #formContainer {
-            display: none;
-        }
-        #mobileBtn {
-            display: block;
-        }
+        #formContainer { display: none; }
+        #mobileBtn { display: block; }
     }
 
-    /* =============================================
-       CUSTOM POPUP (Cinematic + Poetic Card)
-       ============================================= */
+    /* Popup Styling */
     .custom-popup .leaflet-popup-content-wrapper {
         background: transparent !important;
         box-shadow: none !important;
@@ -121,7 +115,6 @@
         border: 1px solid rgba(255,255,255,0.12);
         animation: fadeSlide 0.4s ease forwards;
     }
-
     .popup-header {
         font-size: 1.3rem;
         margin-bottom: 8px;
@@ -130,15 +123,8 @@
         gap: 8px;
     }
 
-    .popup-emoji {
-        font-size: 1.4rem;
-    }
-
-    .popup-name {
-        font-weight: bold;
-        font-size: 1.1rem;
-    }
-
+    .popup-emoji { font-size: 1.4rem; }
+    .popup-name { font-weight: bold; font-size: 1.1rem; }
     .popup-message {
         opacity: 0.85;
         font-size: 1rem;
@@ -188,10 +174,10 @@
     <div id="paypal-button-container"></div>
 </div>
 
-<!-- Mobile Floating Button -->
+<!-- Mobile Button -->
 <button id="mobileBtn" onclick="openMobileForm()">+ Add Message</button>
 
-<!-- Mobile Slide-Up Form -->
+<!-- Mobile Form -->
 <div id="mobileForm">
     <h2>Leave Your Message</h2>
 
@@ -217,7 +203,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19
 }).addTo(map);
 
-/* LOAD MARKERS + POPUPS + FLASH */
+/* LOAD MARKERS */
 fetch(API_URL + "/messages")
 .then(r => r.json())
 .then(messages => {
@@ -237,13 +223,9 @@ fetch(API_URL + "/messages")
                     <span class="popup-name">${m.name}</span>
                 </div>
 
-                <div class="popup-message">
-                    “${m.message}”
-                </div>
+                <div class="popup-message">“${m.message}”</div>
 
-                <div class="popup-country">
-                    ${m.country}
-                </div>
+                <div class="popup-country">${m.country}</div>
 
                 <div class="popup-bottom-line"></div>
             </div>
@@ -268,32 +250,22 @@ fetch(API_URL + "/messages")
                 }
             }, 350);
         }
-
     });
 });
 
-/* MOBILE FORM */
-function openMobileForm() {
-    document.getElementById("mobileForm").style.display = "block";
-}
+/* Mobile Form */
+function openMobileForm() { document.getElementById("mobileForm").style.display = "block"; }
+function closeMobileForm() { document.getElementById("mobileForm").style.display = "none"; }
 
-function closeMobileForm() {
-    document.getElementById("mobileForm").style.display = "none";
-}
-
-/* ===========================
-   PAYPAL — DESKTOP
-   =========================== */
+/* PayPal Desktop */
 paypal.Buttons({
-    createOrder: function(data, actions) {
+    createOrder: (data, actions) => {
         return actions.order.create({
-            purchase_units: [{
-                amount: { value: "10.00" }
-            }]
+            purchase_units: [{ amount: { value: "10.00" } }]
         });
     },
-    onApprove: function(data, actions) {
-        return actions.order.capture().then(function() {
+    onApprove: (data, actions) => {
+        return actions.order.capture().then(() => {
             
             fetch(API_URL + "/payment-success", { method: "POST" })
             .then(r => r.json())
@@ -323,19 +295,15 @@ paypal.Buttons({
     }
 }).render("#paypal-button-container");
 
-/* ===========================
-   PAYPAL — MOBILE
-   =========================== */
+/* PayPal Mobile */
 paypal.Buttons({
-    createOrder: function(data, actions) {
+    createOrder: (data, actions) => {
         return actions.order.create({
-            purchase_units: [{
-                amount: { value: "10.00" }
-            }]
+            purchase_units: [{ amount: { value: "10.00" } }]
         });
     },
-    onApprove: function(data, actions) {
-        return actions.order.capture().then(function() {
+    onApprove: (data, actions) => {
+        return actions.order.capture().then(() => {
             
             fetch(API_URL + "/payment-success", { method: "POST" })
             .then(r => r.json())
@@ -364,72 +332,7 @@ paypal.Buttons({
         });
     }
 }).render("#paypal-button-container-mobile");
-
-
-/* ===============================================
-   TEST MODE (NO PAYMENT)
-   =============================================== */
-
-function testPayment() {
-    alert("TEST MODE: Simulando pago…");
-
-    fetch(API_URL + "/payment-success", { method: "POST" })
-    .then(r => r.json())
-    .then(res => {
-        const token = res.token;
-
-        const name =
-            document.getElementById("m_name")?.value ||
-            document.getElementById("name").value;
-
-        const message =
-            document.getElementById("m_message")?.value ||
-            document.getElementById("message").value;
-
-        const country =
-            document.getElementById("m_country")?.value ||
-            document.getElementById("country").value;
-
-        const emoji =
-            document.getElementById("m_emoji")?.value ||
-            document.getElementById("emoji").value;
-
-        const payload = { name, message, country, emoji };
-
-        fetch(API_URL + "/send-message", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "x-payment-token": token
-            },
-            body: JSON.stringify(payload)
-        }).then(() => {
-            alert("Mensaje enviado (MODO TEST)");
-            location.reload();
-        });
-    });
-}
 </script>
-
-<!-- TEST MODE BUTTON -->
-<button id="testModeBtn"
-style="
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    background: #222;
-    color: white;
-    padding: 10px 14px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    opacity: 0.4;
-    border: none;
-    cursor: pointer;
-    z-index: 99999;
-"
-onclick="testPayment()">
-TEST MODE
-</button>
 
 </body>
 </html>
