@@ -1,159 +1,287 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Last-Words Map</title>
+<meta charset="UTF-8">
+<title>Last-Words — Mapa</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
-
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box }
-    html, body { height:100%; overflow:hidden; background:#0b0b0b; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:#fff }
-    #map { position:absolute; inset:0 auto 0 0; width:calc(100% - 380px); height:100vh; background:#000 } /* mapa full */
-    .sidebar{
-      position:absolute; top:0; right:0; width:380px; height:100vh; overflow-y:auto;
-      background:rgba(0,0,0,.92); border-left:1px solid rgba(255,255,255,.08); backdrop-filter:blur(8px);
-      padding:24px;
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: #000;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
     }
-    .sidebar h2{ font-size:24px; margin-bottom:12px; display:flex; gap:8px; align-items:center }
-    input, textarea{ width:100%; background:#111; border:1px solid #333; color:#fff; border-radius:8px; padding:12px; font-size:15px; margin:.5rem 0 0.8rem }
-    textarea{ height:92px; resize:none }
-    button{ width:100%; border:none; border-radius:999px; padding:14px; font-weight:700; cursor:pointer; margin-top:.4rem }
-    .ghost{ background:#fff; color:#000 }
-    .codebox{ margin-top:.5rem; padding:.75rem; background:#0f0f0f; border:1px solid #242424; border-radius:10px }
-    .muted{ opacity:.7; font-size:13px; margin-top:-6px }
 
-    /* pin parpadeo */
-    @keyframes blink { 0%{transform:scale(1);opacity:1} 50%{transform:scale(1.35);opacity:.45} 100%{transform:scale(1);opacity:1} }
-    .blink{ animation:blink 1.3s infinite }
-  </style>
+    #container {
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+    }
+
+    #map {
+        flex: 1;
+        height: 100%;
+        z-index: 1;
+    }
+
+    /* PANEL DERECHA */
+    #panel {
+        width: 350px;
+        background: #0d0d0d;
+        padding: 25px;
+        box-shadow: -2px 0 10px rgba(0,0,0,0.6);
+        z-index: 9999;
+        overflow-y: auto;
+        color: white;
+    }
+
+    input, textarea {
+        width: 100%;
+        padding: 10px;
+        background: #111;
+        border: 1px solid #333;
+        color: white;
+        border-radius: 8px;
+        margin-top: 8px;
+        margin-bottom: 12px;
+    }
+
+    textarea {
+        height: 110px;
+        resize: none;
+    }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        background: white;
+        border-radius: 20px;
+        border: none;
+        margin-top: 10px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .paypal-container {
+        margin-top: 10px;
+        width: 100%;
+    }
+
+    /* Loader */
+    #loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.65);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        font-size: 22px;
+        color: white;
+        backdrop-filter: blur(4px);
+    }
+
+    /* Mensaje bonito */
+    #successBox {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #0d0d0d;
+        padding: 25px 40px;
+        border-radius: 12px;
+        display: none;
+        text-align: center;
+        color: white;
+        box-shadow: 0 0 15px rgba(255,255,255,0.15);
+        z-index: 10001;
+    }
+</style>
+
 </head>
 <body>
 
-  <div id="map"></div>
+<div id="container">
+    <div id="map"></div>
 
-  <div class="sidebar">
-    <h2>Deja tu mensaje 🌎</h2>
+    <div id="panel">
+        <h2>Deja tu mensaje 🌍</h2>
 
-    <input id="name" placeholder="Nombre" />
-    <textarea id="message" placeholder="Mensaje"></textarea>
-    <input id="country" placeholder="País" />
-    <input id="emoji" placeholder="Emoji (ej.: ❤️)" readonly />
-    <p class="muted">Toca el mapa para elegir la ubicación.</p>
+        <label>Nombre</label>
+        <input id="name" type="text">
 
-    <div class="codebox">
-      <div style="margin-bottom:.4rem">¿Tienes código especial?</div>
-      <input id="freeCode" placeholder="Ingresa tu código" />
-      <button class="ghost" onclick="useFreeCode()">Usar código</button>
+        <label>Mensaje</label>
+        <textarea id="message"></textarea>
+
+        <label>País</label>
+        <input id="country" type="text">
+
+        <label>Emoji (ej: ❤️)</label>
+        <input id="emoji" type="text">
+
+        <p style="font-size:12px;color:#bbb;">
+            Toca el mapa para elegir la ubicación.
+        </p>
+
+        <div id="paypal-button-container" class="paypal-container"></div>
+
+        <label>¿Tienes código especial?</label>
+        <input id="code-input" placeholder="Ingresa tu código">
+        <button onclick="useCode()">Usar código</button>
+
+        <button onclick="publishMessage()">Publicar mensaje</button>
     </div>
+</div>
 
-    <button class="ghost" onclick="publishMessage()">Publicar mensaje</button>
-  </div>
+<!-- Loader -->
+<div id="loader">Publicando tu mensaje...</div>
 
-  <script>
-    // --- Cache-bust sencillo para evitar JS viejo en Vercel/cliente ---
-    console.log("LW map rev=", Date.now()); // fuerza recarga al cambiar el archivo
+<!-- Mensaje bonito -->
+<div id="successBox">✨ Tu mensaje fue publicado ✨</div>
 
-    const BACKEND = "https://last-words-backend.onrender.com";
-    let selectedLat = null, selectedLng = null, paymentToken = null;
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://www.paypal.com/sdk/js?client-id=sb&currency=USD"></script>
 
-    // =======================
-    // MAPA con fallback auto
-    // =======================
-    const map = L.map("map", { zoomControl:true }).setView([20,0], 2);
+<script>
+/* ============================
+   MAPA
+============================ */
+let map = L.map('map').setView([20, 0], 3);
 
-    // Capa Dark (sin API key)
-    const cartoDark = L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-      { maxZoom:19, attribution:'&copy; <a href="https://carto.com/">CARTO</a> · © OpenStreetMap' }
-    );
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    maxZoom: 19
+}).addTo(map);
 
-    // Fallback claro OSM si hay cualquier error de tiles
-    const osm = L.tileLayer(
-      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      { maxZoom:19, attribution:'© OpenStreetMap contributors' }
-    );
+let marker = null;
 
-    let usingFallback = false;
-    cartoDark.addTo(map);
-    cartoDark.on("tileerror", () => {
-      if (!usingFallback) {
-        usingFallback = true;
-        map.removeLayer(cartoDark);
-        osm.addTo(map);
-        console.warn("Carto Dark falló; usando OSM como fallback.");
-      }
-    });
+map.on("click", function (e) {
+    if (marker) map.removeLayer(marker);
 
-    // pick location
-    map.on("click", e => {
-      selectedLat = e.latlng.lat;
-      selectedLng = e.latlng.lng;
-      document.getElementById("emoji").value = "🌟";
-    });
+    marker = L.marker(e.latlng).addTo(map);
+    window.selectedLat = e.latlng.lat;
+    window.selectedLng = e.latlng.lng;
+});
 
-    // =======================
-    // CARGAR MENSAJES
-    // =======================
-    (async function loadMessages(){
-      try{
-        const r = await fetch(BACKEND + "/messages");
-        const arr = await r.json();
-        arr.forEach(m=>{
-          const mk = L.marker([m.latitude, m.longitude]).addTo(map);
-          mk.bindPopup(`<b>${m.name}</b><br>${m.message}<br><i>${m.emoji}</i><br><small>${m.country}</small>`);
+/* ============================
+   LOADER Y ÉXITO
+============================ */
+function showLoader() {
+    document.getElementById("loader").style.display = "flex";
+}
+
+function hideLoader() {
+    document.getElementById("loader").style.display = "none";
+}
+
+function showSuccess() {
+    const box = document.getElementById("successBox");
+    box.style.display = "block";
+    setTimeout(() => {
+        box.style.display = "none";
+    }, 2500);
+}
+
+/* ============================
+   PAYPAL
+============================ */
+paypal.Buttons({
+    createOrder: function (data, actions) {
+        return actions.order.create({
+            purchase_units: [{
+                amount: { value: "10.00" }
+            }]
         });
-      }catch(e){ console.error("No se pudieron cargar mensajes:", e); }
-    })();
+    },
+    onApprove: function (data, actions) {
+        return fetch("https://last-words-backend.onrender.com/payment-success", {
+            method: "POST"
+        })
+        .then(r => r.json())
+        .then(data => {
+            localStorage.setItem("message_token", data.token);
+            alert("Pago exitoso. Ahora puedes publicar tu mensaje.");
+        });
+    }
+}).render("#paypal-button-container");
 
-    // =======================
-    // CÓDIGO GRATIS → token
-    // =======================
-    async function useFreeCode(){
-      const code = document.getElementById("freeCode").value.trim();
-      if(!code) return alert("Ingresa un código.");
-      const r = await fetch(BACKEND + "/use-free-code", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
+/* ============================
+   USAR CÓDIGO
+============================ */
+async function useCode() {
+    const code = document.getElementById("code-input").value;
+
+    showLoader();
+    const res = await fetch("https://last-words-backend.onrender.com/use-free-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code })
-      });
-      const data = await r.json();
-      if(r.status !== 200){ return alert(data.detail || "Código inválido"); }
-      paymentToken = data.token;
-      alert("Código activado 🎉 Ya puedes publicar tu mensaje.");
+    });
+
+    const data = await res.json();
+    hideLoader();
+
+    if (!res.ok) {
+        alert(data.detail);
+        return;
     }
 
-    // =======================
-    // PUBLICAR MENSAJE
-    // =======================
-    async function publishMessage(){
-      if(!paymentToken) return alert("Primero paga con PayPal o usa un código especial.");
-      if(!selectedLat || !selectedLng) return alert("Selecciona una ubicación en el mapa.");
+    localStorage.setItem("message_token", data.token);
+    showSuccess();
+}
 
-      const payload = {
-        name: document.getElementById("name").value,
-        message: document.getElementById("message").value,
-        country: document.getElementById("country").value,
-        emoji: document.getElementById("emoji").value,
-        latitude: selectedLat,
-        longitude: selectedLng
-      };
+/* ============================
+   PUBLICAR MENSAJE
+============================ */
+async function publishMessage() {
+    showLoader();
 
-      const r = await fetch(BACKEND + "/send-message", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json", "x-payment-token": paymentToken },
-        body: JSON.stringify(payload)
-      });
-      const data = await r.json();
-      if(r.status !== 200) return alert(data.detail || "Error al enviar el mensaje");
-      alert("Mensaje publicado ✨");
-      location.reload();
+    const token = localStorage.getItem("message_token");
+
+    if (!token) {
+        hideLoader();
+        return alert("Primero paga o usa un código.");
     }
-  </script>
+
+    try {
+        const res = await fetch("https://last-words-backend.onrender.com/send-message", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-payment-token": token
+            },
+            body: JSON.stringify({
+                name: document.getElementById("name").value,
+                message: document.getElementById("message").value,
+                country: document.getElementById("country").value,
+                emoji: document.getElementById("emoji").value,
+                latitude: window.selectedLat,
+                longitude: window.selectedLng
+            })
+        });
+
+        const data = await res.json();
+
+        hideLoader();
+
+        if (!res.ok) {
+            alert(data.detail);
+            return;
+        }
+
+        localStorage.removeItem("message_token");
+        showSuccess();
+
+    } catch (err) {
+        hideLoader();
+        alert("Error inesperado");
+    }
+}
+</script>
+
 </body>
 </html>
