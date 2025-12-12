@@ -1,210 +1,280 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Last-Words — Map</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Last-Words – Mapa</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-<style>
-body, html {
-    margin:0; padding:0;
-    height:100%; width:100%;
-    background:black;
-    font-family:Arial, sans-serif;
-}
-#map {
-    width:100%; height:100%;
-}
-/* panel */
-#formPanel {
-    position:absolute;
-    top:0; right:0;
-    width:320px; height:100%;
-    background:rgba(0,0,0,0.8);
-    padding:20px;
-    color:white;
-    overflow-y:auto;
-    animation: slideIn 1s ease forwards;
-}
-@keyframes slideIn {
-    from {opacity:0; transform:translateX(40px);}
-    to {opacity:1; transform:translateX(0);}
-}
-input, textarea {
-    width:100%;
-    padding:10px;
-    margin-top:10px;
-    border-radius:6px;
-    border:none;
-}
-button {
-    margin-top:15px;
-    padding:12px;
-    width:100%;
-    background:white;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-}
-#messageCount {
-    position:absolute;
-    top:15px; left:15px;
-    background:rgba(0,0,0,0.6);
-    padding:8px 15px;
-    border-radius:8px;
-    color:white;
-    z-index:9999;
-}
-/* popup éxito */
-#successPopup {
-    display:none;
-    position:fixed;
-    top:0; left:0;
-    width:100vw; height:100vh;
-    background:rgba(0,0,0,0.75);
-    backdrop-filter:blur(4px);
-    align-items:center;
-    justify-content:center;
-    z-index:999999;
-}
-#successPopup .box {
-    background:#111;
-    padding:30px;
-    border-radius:12px;
-    max-width:330px;
-    text-align:center;
-}
-</style>
+    <!-- PayPal -->
+    <script src="https://www.paypal.com/sdk/js?client-id=AcdSyl1qm3V9VXGilsp5CRfod_JcevcSMcrsU05bLfs68cIpGaqoc-Zc_VJF2kL_8WdBUM72b5h29Btr&currency=USD"></script>
+
+    <style>
+        body {
+            margin: 0;
+            background: #0b0b0b;
+            color: white;
+            font-family: "Inter", sans-serif;
+        }
+
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 370px;
+            height: 100vh;
+            background: rgba(0,0,0,0.92);
+            border-left: 1px solid rgba(255,255,255,0.1);
+            padding: 25px;
+            backdrop-filter: blur(12px);
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            margin-top: 8px;
+            margin-bottom: 12px;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 7px;
+            color: white;
+            font-size: 15px;
+        }
+
+        textarea {
+            height: 95px;
+            resize: none;
+        }
+
+        /* Submit button */
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: #ffffff;
+            color: black;
+            border-radius: 40px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        /* Free code box */
+        .free-box {
+            margin-top: 15px;
+            padding: 10px;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 7px;
+        }
+
+        .free-box input {
+            margin-bottom: 6px;
+        }
+
+        /* PIN blink effect */
+        @keyframes blink {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.35); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .blink {
+            animation: blink 1.4s infinite;
+        }
+    </style>
 </head>
-
 <body>
 
-<div id="messageCount">🌍 Contando mensajes...</div>
 <div id="map"></div>
 
-<!-- PANEL -->
-<div id="formPanel">
-    <h3>Leave Your Message</h3>
+<div class="sidebar">
+    <h2>Deja tu mensaje 🌍</h2>
 
-    <input id="name" placeholder="Your name">
-    <textarea id="message" rows="3" placeholder="Your message"></textarea>
-    <input id="country" placeholder="Country">
-    <input id="emoji" placeholder="Emoji (❤️)">
-    <input id="location" placeholder="Select a place on the map" readonly>
+    <label>Nombre</label>
+    <input type="text" id="name">
 
-    <button onclick="useCode()">Use VIP Code</button>
+    <label>Mensaje</label>
+    <textarea id="message"></textarea>
 
-    <div id="paypal-button-container" style="margin-top:10px;"></div>
-</div>
+    <label>País</label>
+    <input type="text" id="country">
 
-<!-- POPUP -->
-<div id="successPopup">
-    <div class="box" style="color:white;">
-        <h2>💫 Thank you</h2>
-        <p>Your message is now part of the world.</p>
-        <button onclick="closePopup()">Close</button>
+    <label>Emoji (tu pin)</label>
+    <input type="text" id="emoji" placeholder="❤️ 😢 ✨">
+
+    <label>Ubicación seleccionada</label>
+    <input type="text" id="location" disabled style="opacity: 0.5;">
+
+    <!-- PAYPAL BUTTON -->
+    <div id="paypal-button-container" style="margin-top: 15px;"></div>
+
+    <!-- FREE CODE SYSTEM -->
+    <div class="free-box">
+        <label>¿Tienes un código especial?</label>
+        <input type="text" id="freeCode" placeholder="Ingresa tu código">
+        <button class="btn-submit" onclick="useFreeCode()">Usar código</button>
     </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID&currency=USD"></script>
-
 <script>
-const API="https://last-words-backend.onrender.com";
+    // ===============================
+    // MAPA
+    // ===============================
+    var map = L.map('map').setView([20, 0], 3);
 
-// MAPA
-const map=L.map('map').setView([20,0],2);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+    }).addTo(map);
 
-let pickedLat=null;
-let pickedLng=null;
+    let selectedLat = null;
+    let selectedLng = null;
 
-// Selección en mapa
-map.on("click", e=>{
-    pickedLat=e.latlng.lat;
-    pickedLng=e.latlng.lng;
-    document.getElementById("location").value=`${pickedLat.toFixed(4)}, ${pickedLng.toFixed(4)}`;
-});
-
-// Cargar mensajes
-fetch(API+"/messages").then(r=>r.json()).then(data=>{
-    data.forEach(m=>{
-        L.marker([m.latitude,m.longitude]).addTo(map)
-        .bindPopup(`<b>${m.emoji} ${m.name}</b><br>${m.message}<br><i>${m.country}</i>`);
+    map.on('click', function(e) {
+        selectedLat = e.latlng.lat;
+        selectedLng = e.latlng.lng;
+        document.getElementById("location").value =
+            selectedLat.toFixed(4) + ", " + selectedLng.toFixed(4);
     });
-});
 
-// Contador
-async function count() {
-    let r=await fetch(API+"/messages");
-    let d=await r.json();
-    document.getElementById("messageCount").innerText=`🌍 Messages: ${d.length}`;
-}
-count();
-setInterval(count,15000);
+    // ===============================
+    // LISTAR MENSAJES
+    // ===============================
+    async function loadMessages() {
+        const res = await fetch("https://last-words-backend.onrender.com/messages");
+        const data = await res.json();
 
-// popup
-function showPopup() {
-    document.getElementById("successPopup").style.display="flex";
-}
-function closePopup() {
-    document.getElementById("successPopup").style.display="none";
-}
+        data.forEach(m => {
+            const icon = L.divIcon({
+                className: "blink",
+                html: `<div style='font-size:22px;'>${m.emoji}</div>`,
+            });
 
-// VIP code
-function useCode() {
-    let code=prompt("Enter your VIP code:");
-    if(!code) return;
-    fetch(API+"/use-free-code",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({code})
-    })
-    .then(r=>r.json())
-    .then(d=>{
-        if(d.token) sendMessage(d.token);
-        else alert("Invalid or used code");
-    });
-}
+            L.marker([m.latitude, m.longitude], {icon}).addTo(map)
+                .bindPopup(`<b>${m.name}</b><br>${m.message}<br><i>${m.country}</i>`);
+        });
+    }
 
-// PayPal
-paypal.Buttons({
-    style:{shape:"pill", color:"white", layout:"vertical"},
-    createOrder(){ return fetch(API+"/payment-success",{method:"POST"}).then(r=>r.json()).then(d=> d.token );},
-    onApprove(data){ sendMessage(data.orderID); }
-}).render("#paypal-button-container");
+    loadMessages();
 
-// Enviar mensaje
-function sendMessage(token) {
-    let n=document.getElementById("name").value;
-    let m=document.getElementById("message").value;
-    let c=document.getElementById("country").value;
-    let e=document.getElementById("emoji").value;
+    // ===============================
+    // TOKEN DE FREE CODE
+    // ===============================
+    let paymentToken = null;
 
-    fetch(API+"/send-message",{
-        method:"POST",
-        headers:{
-            "Content-Type":"application/json",
-            "x-payment-token":token
+    async function useFreeCode() {
+        const code = document.getElementById("freeCode").value.trim();
+
+        if (!code) {
+            alert("Ingresa un código.");
+            return;
+        }
+
+        const res = await fetch("https://last-words-backend.onrender.com/use-free-code", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({code})
+        });
+
+        if (!res.ok) {
+            alert("Código inválido o ya usado.");
+            return;
+        }
+
+        const data = await res.json();
+        paymentToken = data.token;
+        alert("Código aceptado. Ahora puedes publicar tu mensaje.");
+    }
+
+    // ===============================
+    // PAYPAL
+    // ===============================
+    paypal.Buttons({
+        createOrder: function(data, actions) {
+            return actions.order.create({
+                purchase_units: [{ amount: { value: "1.00" }}]
+            });
         },
-        body:JSON.stringify({
-            name:n,
-            message:m,
-            country:c,
-            emoji:e,
-            latitude:pickedLat,
-            longitude:pickedLng
-        })
-    })
-    .then(r=>r.json())
-    .then(()=>{
-        showPopup();
-        setTimeout(()=>location.reload(),2500);
-    });
-}
+        onApprove: function(data, actions) {
+            return actions.order.capture().then(function(details) {
+                fetch("https://last-words-backend.onrender.com/payment-success", {
+                    method: "POST"
+                })
+                .then(r => r.json())
+                .then(data => {
+                    paymentToken = data.token;
+                    alert("Pago completado. Ahora puedes enviar tu mensaje.");
+                });
+            });
+        }
+    }).render("#paypal-button-container");
+
+    // ===============================
+    // ENVIAR PIN
+    // ===============================
+    async function sendMessage() {
+        if (!paymentToken) {
+            alert("Debes pagar o usar un código para publicar.");
+            return;
+        }
+
+        const name = document.getElementById("name").value;
+        const message = document.getElementById("message").value;
+        const country = document.getElementById("country").value;
+        const emoji = document.getElementById("emoji").value;
+
+        if (!name || !message || !emoji || !selectedLat) {
+            alert("Todos los campos y la ubicación son necesarios.");
+            return;
+        }
+
+        const body = {
+            name, message, country, emoji,
+            latitude: selectedLat,
+            longitude: selectedLng
+        };
+
+        const res = await fetch("https://last-words-backend.onrender.com/send-message", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-payment-token": paymentToken
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+            alert("Mensaje enviado.");
+            location.reload();
+        } else {
+            alert("Error enviando mensaje.");
+        }
+    }
 </script>
+
+<!-- Submit Button -->
+<button class="btn-submit" onclick="sendMessage()" 
+        style="position: fixed; bottom: 20px; right: 20px; width: 330px;">
+    Publicar mensaje
+</button>
 
 </body>
 </html>
