@@ -1,266 +1,87 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Last Words — Admin Panel</title>
-
+<title>Admin — Last-Words</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-    body {
-        margin: 0;
-        background: #000;
-        color: #fff;
-        font-family: Arial, sans-serif;
-    }
-
-    #login-box, #admin-panel {
-        width: 90%;
-        max-width: 600px;
-        margin: 80px auto;
-        background: #111;
-        padding: 25px;
-        border-radius: 8px;
-        display: none;
-    }
-
-    h2 {
-        text-align: center;
-        font-weight: 300;
-        margin-bottom: 20px;
-    }
-
-    input, textarea {
-        width: 100%;
-        padding: 12px;
-        margin-bottom: 12px;
-        border-radius: 4px;
-        background: #222;
-        border: none;
-        color: #fff;
-        font-size: 15px;
-    }
-
-    button {
-        padding: 12px 20px;
-        background: #fff;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        color: #000;
-        font-size: 14px;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 25px;
-        font-size: 14px;
-    }
-
-    th, td {
-        padding: 10px;
-        border-bottom: 1px solid #333;
-        text-align: left;
-    }
-
-    th {
-        background: #222;
-    }
-
-    .actions button {
-        margin-right: 8px;
-        background: #ddd;
-        color: #000;
-    }
-
-    #edit-box {
-        margin-top: 20px;
-        background: #111;
-        padding: 20px;
-        border-radius: 8px;
-        display: none;
-    }
+body {
+    background:black;
+    color:white;
+    font-family:Arial;
+    padding:20px;
+}
+table {
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+td, th {
+    border:1px solid #444;
+    padding:10px;
+}
+input {
+    margin-top:10px;
+    padding:10px;
+    width:250px;
+}
+button {
+    margin-left:10px;
+    padding:10px 15px;
+}
 </style>
-
 </head>
+
 <body>
 
-<!-- LOGIN -->
-<div id="login-box">
-    <h2>Admin Login</h2>
-    <input id="admin-user" type="text" placeholder="Usuario">
-    <input id="admin-pass" type="password" placeholder="Contraseña">
-    <button onclick="login()">Entrar</button>
-</div>
+<h2>Admin Login</h2>
 
-<!-- PANEL ADMIN -->
-<div id="admin-panel">
-    <h2>Panel Administrativo</h2>
+<input id="user" placeholder="username">
+<input id="pass" placeholder="password" type="password">
+<button onclick="login()">Login</button>
 
-    <table id="msg-table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Emoji</th>
-                <th>Nombre</th>
-                <th>País</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-
-    <!-- Edición -->
-    <div id="edit-box">
-        <h3 style="font-weight:300;">Editar Mensaje</h3>
-
-        <input type="text" id="edit-name" placeholder="Nombre">
-        <input type="text" id="edit-emoji" placeholder="Emoji">
-        <input type="text" id="edit-country" placeholder="País">
-        <textarea id="edit-message" rows="4" placeholder="Mensaje"></textarea>
-        <input type="text" id="edit-lat" placeholder="Latitud">
-        <input type="text" id="edit-lon" placeholder="Longitud">
-
-        <button onclick="saveEdit()">Guardar cambios</button>
-        <button onclick="cancelEdit()" style="background:#333;color:#fff;">Cancelar</button>
-    </div>
+<div id="panel" style="display:none;">
+    <h3>Messages</h3>
+    <table id="msgs"></table>
 </div>
 
 <script>
-const API = "https://last-words-backend.onrender.com";
-let adminToken = null;
-let editingId = null;
+const API="https://last-words-backend.onrender.com";
+let adminToken=null;
 
-// --------------------
-// MOSTRAR LOGIN
-// --------------------
-document.getElementById("login-box").style.display = "block";
-
-// --------------------
-// LOGIN ADMIN
-// --------------------
-async function login() {
-    const user = document.getElementById("admin-user").value;
-    const pass = document.getElementById("admin-pass").value;
-
-    const r = await fetch(`${API}/admin/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: user, password: pass })
-    });
-
-    if (!r.ok) return alert("Credenciales incorrectas.");
-
-    const data = await r.json();
-    adminToken = data.admin_token;
-
-    document.getElementById("login-box").style.display = "none";
-    document.getElementById("admin-panel").style.display = "block";
-
-    loadMessages();
-}
-
-// --------------------
-// CARGAR MENSAJES
-// --------------------
-async function loadMessages() {
-    const r = await fetch(`${API}/admin/messages`, {
-        headers: { "x-admin-token": adminToken }
-    });
-    const msgs = await r.json();
-
-    const tbody = document.querySelector("#msg-table tbody");
-    tbody.innerHTML = "";
-
-    msgs.forEach(m => {
-        const row = `
-            <tr>
-                <td>${m.id}</td>
-                <td>${m.emoji}</td>
-                <td>${m.name}</td>
-                <td>${m.country}</td>
-                <td class="actions">
-                    <button onclick="editMessage(${m.id})">Editar</button>
-                    <button onclick="deleteMessage(${m.id})" style="background:#ff4444;color:#fff;">Borrar</button>
-                </td>
-            </tr>
-        `;
-        tbody.innerHTML += row;
+function login() {
+    fetch(API+"/admin/login",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            username:document.getElementById("user").value,
+            password:document.getElementById("pass").value
+        })
+    }).then(r=>r.json()).then(d=>{
+        adminToken=d.admin_token;
+        load();
     });
 }
 
-// --------------------
-// EDITAR
-// --------------------
-async function editMessage(id) {
-    editingId = id;
-
-    const r = await fetch(`${API}/admin/messages`, {
-        headers: { "x-admin-token": adminToken }
+function load() {
+    document.getElementById("panel").style.display="block";
+    fetch(API+"/admin/messages",{
+        headers:{"x-admin-token":adminToken}
+    })
+    .then(r=>r.json())
+    .then(data=>{
+        let html="<tr><th>ID</th><th>Name</th><th>Message</th><th>Country</th><th>Emoji</th></tr>";
+        data.forEach(x=>{
+            html+=`<tr>
+                <td>${x.id}</td>
+                <td>${x.name}</td>
+                <td>${x.message}</td>
+                <td>${x.country}</td>
+                <td>${x.emoji}</td>
+            </tr>`;
+        });
+        document.getElementById("msgs").innerHTML=html;
     });
-    const msgs = await r.json();
-
-    const msg = msgs.find(m => m.id === id);
-
-    document.getElementById("edit-name").value = msg.name;
-    document.getElementById("edit-emoji").value = msg.emoji;
-    document.getElementById("edit-country").value = msg.country;
-    document.getElementById("edit-message").value = msg.message;
-    document.getElementById("edit-lat").value = msg.latitude;
-    document.getElementById("edit-lon").value = msg.longitude;
-
-    document.getElementById("edit-box").style.display = "block";
-}
-
-function cancelEdit() {
-    editingId = null;
-    document.getElementById("edit-box").style.display = "none";
-}
-
-// --------------------
-// GUARDAR EDICIÓN
-// --------------------
-async function saveEdit() {
-    const payload = {
-        name: document.getElementById("edit-name").value,
-        emoji: document.getElementById("edit-emoji").value,
-        country: document.getElementById("edit-country").value,
-        message: document.getElementById("edit-message").value,
-        latitude: parseFloat(document.getElementById("edit-lat").value),
-        longitude: parseFloat(document.getElementById("edit-lon").value)
-    };
-
-    const r = await fetch(`${API}/edit-message/${editingId}`, {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            "x-admin-token": adminToken
-        },
-        body: JSON.stringify(payload)
-    });
-
-    if (!r.ok) return alert("Error al guardar.");
-
-    alert("Mensaje actualizado✔");
-    cancelEdit();
-    loadMessages();
-}
-
-// --------------------
-// ELIMINAR
-// --------------------
-async function deleteMessage(id) {
-    if (!confirm("¿Eliminar este mensaje?")) return;
-
-    const r = await fetch(`${API}/delete-message/${id}`, {
-        method: "DELETE",
-        headers: {
-            "x-admin-token": adminToken
-        }
-    });
-
-    if (!r.ok) return alert("No se pudo borrar.");
-
-    loadMessages();
 }
 </script>
 
