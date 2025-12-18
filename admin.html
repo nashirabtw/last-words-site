@@ -1,87 +1,102 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Admin — Last-Words</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Last-Words — Admin</title>
+
 <style>
 body {
-    background:black;
-    color:white;
-    font-family:Arial;
-    padding:20px;
+  background:#000;
+  color:#f5f5f5;
+  font-family: Inter, Arial, sans-serif;
+  padding:40px;
 }
-table {
-    width:100%;
-    border-collapse:collapse;
-    margin-top:20px;
-}
-td, th {
-    border:1px solid #444;
-    padding:10px;
-}
+
 input {
-    margin-top:10px;
-    padding:10px;
-    width:250px;
+  padding:10px;
+  width:320px;
+  background:#111;
+  border:1px solid #333;
+  color:white;
+  border-radius:6px;
 }
+
 button {
-    margin-left:10px;
-    padding:10px 15px;
+  padding:8px 14px;
+  background:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  margin-top:10px;
+}
+
+.message {
+  border-bottom:1px solid #222;
+  padding:15px 0;
+}
+
+small {
+  color:#888;
+}
+.hidden {
+  opacity: 0.4;
 }
 </style>
 </head>
 
 <body>
 
-<h2>Admin Login</h2>
+<h1>Admin — Last Words</h1>
 
-<input id="user" placeholder="username">
-<input id="pass" placeholder="password" type="password">
-<button onclick="login()">Login</button>
+<p>Admin Token</p>
+<input id="token" placeholder="Enter admin token">
+<br>
+<button onclick="loadMessages()">Load messages</button>
 
-<div id="panel" style="display:none;">
-    <h3>Messages</h3>
-    <table id="msgs"></table>
-</div>
+<div id="messages"></div>
 
 <script>
-const API="https://last-words-backend.onrender.com";
-let adminToken=null;
+async function loadMessages() {
+  const token = document.getElementById("token").value;
 
-function login() {
-    fetch(API+"/admin/login",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-            username:document.getElementById("user").value,
-            password:document.getElementById("pass").value
-        })
-    }).then(r=>r.json()).then(d=>{
-        adminToken=d.admin_token;
-        load();
-    });
+  const res = await fetch(
+    "https://last-words-backend.onrender.com/admin/messages",
+    { headers: { "x-admin-token": token } }
+  );
+
+  if (!res.ok) return alert("Unauthorized");
+
+  const data = await res.json();
+  const container = document.getElementById("messages");
+  container.innerHTML = "";
+
+  data.forEach(m => {
+    const div = document.createElement("div");
+    div.className = "message " + (m.hidden ? "hidden" : "");
+    div.innerHTML = `
+      <p>${m.message}</p>
+      <small>${m.country || ""} · ${m.created_at}</small><br>
+      ${m.hidden ? "<small>Hidden</small>" : `<button onclick="hideMessage(${m.id})">Hide</button>`}
+    `;
+    container.appendChild(div);
+  });
 }
 
-function load() {
-    document.getElementById("panel").style.display="block";
-    fetch(API+"/admin/messages",{
-        headers:{"x-admin-token":adminToken}
-    })
-    .then(r=>r.json())
-    .then(data=>{
-        let html="<tr><th>ID</th><th>Name</th><th>Message</th><th>Country</th><th>Emoji</th></tr>";
-        data.forEach(x=>{
-            html+=`<tr>
-                <td>${x.id}</td>
-                <td>${x.name}</td>
-                <td>${x.message}</td>
-                <td>${x.country}</td>
-                <td>${x.emoji}</td>
-            </tr>`;
-        });
-        document.getElementById("msgs").innerHTML=html;
-    });
+async function hideMessage(id) {
+  const token = document.getElementById("token").value;
+
+  if (!confirm("Hide this message from the public map?")) return;
+
+  const res = await fetch(
+    "https://last-words-backend.onrender.com/admin/messages/" + id + "/hide",
+    {
+      method: "PATCH",
+      headers: { "x-admin-token": token }
+    }
+  );
+
+  if (res.ok) loadMessages();
+  else alert("Error hiding message");
 }
 </script>
 
