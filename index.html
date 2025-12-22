@@ -2,214 +2,246 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Paga y deja tu mensaje</title>
+  <title>Last Words</title>
 
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
+  <!-- ESTILOS -->
   <style>
-    body { font-family: Arial, sans-serif; max-width: 900px; margin: 30px auto; }
-    .message { border-bottom: 1px solid #ddd; padding: 8px 0; }
-    #map { height: 420px; border-radius: 10px; border: 1px solid #ddd; margin: 10px 0 20px; }
+    /* RESET */
+    * { box-sizing: border-box; }
 
-    /* Icono con “pulso” para mensajes nuevos */
+    body {
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      background: #05070c;
+      color: #ffffff;
+      overflow-x: hidden;
+    }
+
+    /* ESTRELLAS */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(1px 1px at 20% 30%, white, transparent),
+        radial-gradient(1px 1px at 80% 40%, white, transparent),
+        radial-gradient(1px 1px at 50% 80%, white, transparent),
+        radial-gradient(1px 1px at 70% 10%, white, transparent);
+      opacity: 0.6;
+      animation: twinkle 6s infinite alternate;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    @keyframes twinkle {
+      from { opacity: 0.4; }
+      to { opacity: 0.8; }
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-weight: 300;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+    }
+
+    p.subtitle {
+      text-align: center;
+      opacity: 0.7;
+      margin-bottom: 30px;
+    }
+
+    /* MAPA */
+    #map {
+      height: 420px;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+      margin-bottom: 30px;
+    }
+
+    /* PAYPAL */
+    #paypal-button-container {
+      max-width: 320px;
+      margin: 20px auto;
+      background: #0b1220;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    /* FORMULARIO */
+    form {
+      display: none;
+      background: #0b1220;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+    }
+
+    input, textarea {
+      background: #111827;
+      color: white;
+    }
+
+    button {
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1e40af;
+    }
+
+    /* MENSAJES */
+    .message {
+      border-bottom: 1px solid #1f2937;
+      padding: 10px 0;
+      font-size: 14px;
+    }
+
+    /* PIN */
     .pulse {
-      position: relative;
-      width: 34px; height: 34px;
+      width: 32px;
+      height: 32px;
+      background: #2563eb;
       border-radius: 50%;
-      background: #ff4757;
-      display: flex; align-items: center; justify-content: center;
-      color: #fff; font-size: 18px; font-weight: bold;
-      animation: pulse 1s ease-in-out infinite;
-      box-shadow: 0 0 0 0 rgba(255,71,87, 0.7);
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,71,87, 0.7); }
-      70% { transform: scale(1.08); box-shadow: 0 0 0 15px rgba(255,71,87, 0); }
-      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,71,87, 0); }
-    }
-    .pin {
-      width: 34px; height: 34px;
-      border-radius: 50%;
-      background: #2d3436;
-      display: flex; align-items: center; justify-content: center;
-      color: #fff; font-size: 18px; font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pulse 1s infinite;
+      color: white;
+      font-size: 18px;
     }
 
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(37,99,235,0.7); }
+      70% { box-shadow: 0 0 0 15px rgba(37,99,235,0); }
+      100% { box-shadow: 0 0 0 0 rgba(37,99,235,0); }
+    }
   </style>
 </head>
+
 <body>
+  <div class="container">
+    <h1>Last Words</h1>
+    <p class="subtitle">Un mensaje. Un lugar. Un momento.</p>
 
-<h2>Paga y deja tu mensaje</h2>
+    <div id="map"></div>
 
-<div class="row">
-  <div>
-    <!-- PAYPAL -->
     <div id="paypal-button-container"></div>
 
-    <!-- FORMULARIO -->
-    <form id="messageForm" style="display:none; margin-top: 16px;">
-      <input id="name" placeholder="Tu nombre" required style="width:100%; padding:8px;"><br><br>
-      <textarea id="message" placeholder="Tu mensaje" required style="width:100%; padding:8px;"></textarea><br><br>
-      <input id="country" placeholder="País" required style="width:100%; padding:8px;"><br><br>
-      <input id="emoji" placeholder="Emoji (ej: ❤️, 🎉, 😎)" required style="width:100%; padding:8px;"><br><br>
-      <input id="location" placeholder="Ciudad / Dirección (ej: 'Madrid, España')" required style="width:100%; padding:8px;"><br><br>
-      <button type="submit" style="padding:10px 16px;">Enviar mensaje</button>
+    <form id="messageForm">
+      <input id="name" placeholder="Tu nombre" required>
+      <textarea id="message" placeholder="Tu mensaje" required></textarea>
+      <input id="country" placeholder="País" required>
+      <input id="location" placeholder="Ciudad o dirección" required>
+      <button type="submit">Publicar mensaje</button>
     </form>
 
-    <hr>
-
     <h2>Mensajes</h2>
-    <div id="messages">Cargando mensajes...</div>
+    <div id="messages"></div>
   </div>
 
-  <div>
-    <h2>Mapa</h2>
-    <div id="map"></div>
-  </div>
-</div>
+  <!-- PAYPAL -->
+  <script src="https://www.paypal.com/sdk/js?client-id=AX55daDbCKwDRrwqHYXBsV8f0a7zMIWEVLOC1KzS8xo-uKje_G4poVe-_Foww1x00w-NzGrXfOPlBZk-&currency=USD"></script>
 
-<!-- PAYPAL SDK -->
-<script src="https://www.paypal.com/sdk/js?client-id=AX55daDbCKwDRrwqHYXBsV8f0a7zMIWEVLOC1KzS8xo-uKje_G4poVe-_Foww1x00w-NzGrXfOPlBZk-&currency=USD"></script>
+  <!-- LEAFLET -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<!-- Leaflet JS -->
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-  crossorigin=""
-></script>
+  <script>
+    const API = "https://last-words-backend.onrender.com";
+    const FIXED_EMOJI = "💫"; // EMOJI FIJO GLOBAL
+    let paymentToken = null;
 
-<script>
-/* URL DEL BACKEND EN PRODUCCIÓN */
-const API = "https://last-words-backend.onrender.com";
+    /* MAPA OSCURO */
+    const map = L.map("map").setView([20, 0], 2);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: "© OpenStreetMap"
+    }).addTo(map);
 
-let paymentToken = null;
-
-/* ============ MAPA ============ */
-const map = L.map('map').setView([20, 0], 2); // mundo
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap'
-}).addTo(map);
-
-function markerIcon(emoji, pulsing=false) {
-  const cls = pulsing ? 'pulse' : 'pin';
-  return L.divIcon({
-    className: '',
-    html: `<div class="${cls}">${emoji || "📍"}</div>`,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17]
-  });
-}
-
-function addMarker(lat, lon, emoji, popupHtml, pulsing=false) {
-  if (lat == null || lon == null) return;
-  L.marker([lat, lon], { icon: markerIcon(emoji, pulsing) })
-    .addTo(map)
-    .bindPopup(popupHtml);
-}
-
-/* ============ PAYPAL ============ */
-paypal.Buttons({
-  createOrder: (data, actions) => actions.order.create({
-    purchase_units: [{ amount: { value: "8.00" } }]
-  }),
-  onApprove: async (data, actions) => {
-    await actions.order.capture();
-    const res = await fetch(`${API}/payment-success`, { method: "POST" });
-    const dataToken = await res.json();
-    paymentToken = dataToken.token;
-    document.getElementById("messageForm").style.display = "block";
-    alert("Pago completado. Puedes enviar UN mensaje.");
-  }
-}).render("#paypal-button-container");
-
-/* ============ ENVIAR ============ */
-document.getElementById("messageForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!paymentToken) { alert("Debes pagar antes de enviar."); return; }
-
-  const payload = {
-    name: document.getElementById("name").value,
-    message: document.getElementById("message").value,
-    country: document.getElementById("country").value,
-    emoji: document.getElementById("emoji").value,
-    location: document.getElementById("location").value
-  };
-
-  const res = await fetch(`${API}/send-message`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-payment-token": paymentToken
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const data = await res.json();
-
-  if (data.status === "guardado") {
-    alert("Mensaje enviado 🎉");
-    // marcador “nuevo” con pulso por 5s
-    if (data.lat != null && data.lon != null) {
-      const popup = `<strong>${payload.name}</strong> ${payload.emoji}<br>${payload.message}<br><small>${payload.location}</small>`;
-      const m = L.marker([data.lat, data.lon], { icon: markerIcon(payload.emoji, true) })
-        .addTo(map).bindPopup(popup);
-      setTimeout(() => {
-        // reemplazar por icono normal
-        m.setIcon(markerIcon(payload.emoji, false));
-      }, 5000);
-    }
-    paymentToken = null;
-    e.target.reset();
-    cargarMensajes(); // refresca lista + mapa
-  } else {
-    alert("Error al enviar.");
-  }
-});
-
-/* ============ CARGAR MENSAJES ============ */
-async function cargarMensajes() {
-  try {
-    const res = await fetch(`${API}/messages`);
-    const data = await res.json();
-
-    // lista
-    const container = document.getElementById("messages");
-    container.innerHTML = "";
-    if (!Array.isArray(data) || data.length === 0) {
-      container.innerText = "No hay mensajes aún.";
-    } else {
-      data.forEach(m => {
-        const div = document.createElement("div");
-        div.className = "message";
-        div.innerHTML = `<strong>📍 ${m.country} ${m.emoji}</strong><br>${m.name}: ${m.message}<br><small>${m.location || ""}</small>`;
-        container.appendChild(div);
+    function pulseIcon() {
+      return L.divIcon({
+        html: `<div class="pulse">${FIXED_EMOJI}</div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
       });
     }
 
-    // mapa
-    // limpiar todas las capas de marcadores (excepto el tile layer)
-    map.eachLayer(layer => {
-      if (!(layer instanceof L.TileLayer)) map.removeLayer(layer);
+    /* PAYPAL */
+    paypal.Buttons({
+      createOrder: (d,a)=>a.order.create({
+        purchase_units:[{amount:{value:"8.00"}}]
+      }),
+      onApprove: async (d,a)=>{
+        await a.order.capture();
+        const r = await fetch(`${API}/payment-success`, {method:"POST"});
+        const j = await r.json();
+        paymentToken = j.token;
+        document.getElementById("messageForm").style.display="block";
+      }
+    }).render("#paypal-button-container");
+
+    /* ENVIAR */
+    document.getElementById("messageForm").addEventListener("submit", async e=>{
+      e.preventDefault();
+      const payload = {
+        name:name.value,
+        message:message.value,
+        country:country.value,
+        location:location.value,
+        emoji: FIXED_EMOJI
+      };
+      const r = await fetch(`${API}/send-message`,{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "x-payment-token":paymentToken
+        },
+        body:JSON.stringify(payload)
+      });
+      const j = await r.json();
+      if(j.status==="guardado"){
+        L.marker([j.lat,j.lon],{icon:pulseIcon()})
+          .addTo(map)
+          .bindPopup(`<b>${payload.name}</b><br>${payload.message}`);
+        cargarMensajes();
+        paymentToken=null;
+        e.target.reset();
+      }
     });
 
-    data.forEach(m => {
-      const popup = `<strong>${m.name}</strong> ${m.emoji}<br>${m.message}<br><small>${m.location || ""}</small>`;
-      addMarker(m.lat, m.lon, m.emoji, popup, false);
-    });
-  } catch (err) {
-    document.getElementById("messages").innerText = "Error cargando mensajes.";
-  }
-}
+    async function cargarMensajes(){
+      const r = await fetch(`${API}/messages`);
+      const data = await r.json();
+      const c = document.getElementById("messages");
+      c.innerHTML="";
+      data.forEach(m=>{
+        const d=document.createElement("div");
+        d.className="message";
+        d.innerHTML=`<b>${FIXED_EMOJI} ${m.country}</b><br>${m.name}: ${m.message}`;
+        c.appendChild(d);
+      });
+    }
 
-cargarMensajes();
-</script>
-
+    cargarMensajes();
+  </script>
 </body>
 </html>
