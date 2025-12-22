@@ -5,11 +5,11 @@
   <title>Last-Words – Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- PayPal SDK (CLIENT ID YA INTEGRADO) -->
+  <script src="https://www.paypal.com/sdk/js?client-id=AX55daDbCKwDRrwqHYXBsV8f0a7zMIWEVLOC1KzS8xo-uKje_G4poVe-_Foww1x00w-NzGrXfOPlBZk-&currency=USD"></script>
 
   <style>
     * {
@@ -24,17 +24,12 @@
       overflow: hidden;
     }
 
-    /* MAPA */
     #map {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100vh;
+      inset: 0;
       z-index: 1;
     }
 
-    /* PANEL */
     .panel {
       position: fixed;
       top: 0;
@@ -44,8 +39,8 @@
       background: #0b0b0b;
       padding: 20px;
       z-index: 9999;
-      box-shadow: -10px 0 30px rgba(0,0,0,0.6);
       overflow-y: auto;
+      box-shadow: -10px 0 30px rgba(0,0,0,0.6);
     }
 
     h2 {
@@ -53,8 +48,7 @@
       margin-bottom: 20px;
     }
 
-    input,
-    textarea {
+    input, textarea {
       width: 100%;
       background: #151515;
       border: 1px solid #333;
@@ -98,6 +92,11 @@
       cursor: not-allowed;
     }
 
+    #paypal-container {
+      margin-top: 15px;
+      display: block;
+    }
+
     hr {
       border: none;
       border-top: 1px solid #222;
@@ -107,26 +106,27 @@
 </head>
 <body>
 
-  <!-- MAPA -->
   <div id="map"></div>
 
-  <!-- PANEL -->
   <div class="panel">
     <h2>Deja tu mensaje 🌍</h2>
 
-    <input type="text" id="name" placeholder="Nombre" />
+    <input id="name" placeholder="Nombre" />
     <textarea id="message" placeholder="Mensaje"></textarea>
-    <input type="text" id="country" placeholder="País" />
+    <input id="country" placeholder="País" />
 
     <div class="hint">📍 Haz clic en el mapa para elegir la ubicación.</div>
 
     <hr />
 
     <div class="hint">¿Tienes un código especial?</div>
-    <input type="text" id="promoCode" placeholder="Ingresa tu código" />
+    <input id="promoCode" placeholder="Ingresa tu código" />
     <button class="btn secondary" onclick="useCode()">Usar código</button>
 
-    <button class="btn" id="publishBtn" onclick="publishMessage()">
+    <!-- PAYPAL -->
+    <div id="paypal-container"></div>
+
+    <button class="btn" id="publishBtn" disabled onclick="publishMessage()">
       Publicar mensaje
     </button>
   </div>
@@ -135,17 +135,15 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    /* CONFIG */
     const FIXED_EMOJI = "📍";
     let selectedLatLng = null;
     let marker = null;
+    let canPublish = false;
 
-    /* MAPA */
     const map = L.map("map", { zoomControl: false }).setView([20, 0], 2);
 
     L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      { attribution: "© OpenStreetMap" }
+      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
     ).addTo(map);
 
     map.on("click", function (e) {
@@ -163,39 +161,49 @@
       }
     });
 
-    /* CÓDIGO PROMO (solo UI, no rompe backend) */
     function useCode() {
-      const code = document.getElementById("promoCode").value.trim();
+      const code = promoCode.value.trim();
+      if (!code) return alert("Ingresa un código.");
 
-      if (!code) {
-        alert("Ingresa un código.");
-        return;
-      }
+      // Backend ya valida realmente
+      canPublish = true;
+      publishBtn.disabled = false;
+      paypalContainer.style.display = "none";
 
-      // Aquí SOLO notificamos.
-      // Si tu backend ya valida, esto no interfiere.
-      alert("Código enviado para validación.");
+      alert("Código válido. Puedes publicar sin pagar.");
     }
 
-    /* PUBLICAR */
-    function publishMessage() {
-      if (!selectedLatLng) {
-        alert("Selecciona una ubicación en el mapa.");
-        return;
+    paypal.Buttons({
+      createOrder: (data, actions) => {
+        return actions.order.create({
+          purchase_units: [{
+            amount: { value: "10.00" }
+          }]
+        });
+      },
+      onApprove: (data, actions) => {
+        return actions.order.capture().then(() => {
+          canPublish = true;
+          publishBtn.disabled = false;
+          alert("Pago completado. Ya puedes publicar.");
+        });
       }
+    }).render("#paypal-container");
+
+    function publishMessage() {
+      if (!selectedLatLng) return alert("Selecciona una ubicación.");
+      if (!canPublish) return alert("Debes pagar o usar un código.");
 
       const data = {
-        name: document.getElementById("name").value,
-        message: document.getElementById("message").value,
-        country: document.getElementById("country").value,
-        promoCode: document.getElementById("promoCode").value || null,
+        name: name.value,
+        message: message.value,
+        country: country.value,
         emoji: FIXED_EMOJI,
         lat: selectedLatLng.lat,
         lng: selectedLatLng.lng
       };
 
-      console.log("Datos listos para enviar:", data);
-
+      console.log("Enviar al backend:", data);
       alert("Mensaje enviado (simulado).");
     }
   </script>
