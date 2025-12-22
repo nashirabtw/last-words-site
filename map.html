@@ -39,7 +39,7 @@
       width: 340px;
       height: 100vh;
       background: #0b0b0b;
-      padding: 20px;
+      padding: 20px 20px 90px; /* espacio para CTA */
       z-index: 9999;
       box-shadow: -10px 0 30px rgba(0,0,0,0.6);
       overflow: hidden;
@@ -79,34 +79,12 @@
       font-size: 0.95rem;
       border-radius: 999px;
       cursor: pointer;
-      margin-top: 10px;
-      transition: all 0.25s ease;
     }
 
     .btn.secondary {
       background: #222;
       color: white;
-    }
-
-    /* 🔥 BOTÓN PRINCIPAL (PUBLICAR) */
-    .btn.primary {
-      background: white;
-      color: black;
-      font-weight: 600;
-      box-shadow: 0 0 0 rgba(255,255,255,0);
-    }
-
-    .btn.primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 20px rgba(255,255,255,0.25);
-    }
-
-    .btn.primary:disabled {
-      background: #444;
-      color: #aaa;
-      cursor: not-allowed;
-      box-shadow: none;
-      transform: none;
+      margin-top: 10px;
     }
 
     hr {
@@ -115,7 +93,7 @@
       margin: 14px 0;
     }
 
-    /* PAYPAL ESTABLE */
+    /* PAYPAL */
     #paypal-container {
       height: 52px;
       display: flex;
@@ -124,98 +102,126 @@
       margin-top: 12px;
     }
 
-    #paypal-container iframe {
-      transform: translate3d(0,0,0);
+    /* 🔥 CTA FIJO ABAJO */
+    .cta {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(
+        to top,
+        rgba(0,0,0,0.95),
+        rgba(0,0,0,0.7),
+        transparent
+      );
+    }
+
+    .cta button {
+      width: 100%;
+      background: white;
+      color: black;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 14px;
+      border-radius: 999px;
+      transition: all 0.25s ease;
+    }
+
+    .cta button:disabled {
+      background: #444;
+      color: #aaa;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
 
-  <div id="map"></div>
+<div id="map"></div>
 
-  <div class="panel">
-    <h2>Deja tu mensaje 🌍</h2>
+<div class="panel">
+  <h2>Deja tu mensaje 🌍</h2>
 
-    <input id="name" placeholder="Nombre" />
-    <textarea id="message" placeholder="Mensaje"></textarea>
-    <input id="country" placeholder="País" />
+  <input id="name" placeholder="Nombre" />
+  <textarea id="message" placeholder="Mensaje"></textarea>
+  <input id="country" placeholder="País" />
 
-    <div class="hint">📍 Haz clic en el mapa para elegir la ubicación.</div>
+  <div class="hint">📍 Haz clic en el mapa para elegir la ubicación.</div>
 
-    <hr />
+  <hr />
 
-    <div class="hint">¿Tienes un código especial?</div>
-    <input id="promoCode" placeholder="Ingresa tu código" />
-    <button class="btn secondary" onclick="useCode()">Usar código</button>
+  <div class="hint">¿Tienes un código especial?</div>
+  <input id="promoCode" placeholder="Ingresa tu código" />
+  <button class="btn secondary" onclick="useCode()">Usar código</button>
 
-    <div id="paypal-container"></div>
+  <div id="paypal-container"></div>
 
-    <!-- 🔥 BOTÓN FINAL VISIBLE -->
-    <button class="btn primary" id="publishBtn" disabled onclick="publishMessage()">
+  <!-- CTA -->
+  <div class="cta">
+    <button id="publishBtn" disabled onclick="publishMessage()">
       Publicar mensaje
     </button>
   </div>
+</div>
 
-  <!-- Leaflet -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <script>
-    const FIXED_EMOJI = "📍";
-    let selectedLatLng = null;
-    let marker = null;
-    let canPublish = false;
+<script>
+  const FIXED_EMOJI = "📍";
+  let selectedLatLng = null;
+  let marker = null;
+  let canPublish = false;
 
-    const map = L.map("map", { zoomControl: false }).setView([20, 0], 2);
+  const map = L.map("map", { zoomControl: false }).setView([20, 0], 2);
 
-    L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    ).addTo(map);
+  L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+  ).addTo(map);
 
-    map.on("click", e => {
-      selectedLatLng = e.latlng;
-      if (marker) marker.setLatLng(e.latlng);
-      else {
-        marker = L.marker(e.latlng, {
-          icon: L.divIcon({
-            className: "",
-            html: `<div style="font-size:24px;">${FIXED_EMOJI}</div>`
-          })
-        }).addTo(map);
-      }
-    });
-
-    function useCode() {
-      const code = promoCode.value.trim();
-      if (!code) return alert("Ingresa un código.");
-
-      canPublish = true;
-      publishBtn.disabled = false;
-      paypalContainer.style.display = "none";
-      alert("Código válido. Puedes publicar sin pagar.");
+  map.on("click", e => {
+    selectedLatLng = e.latlng;
+    if (marker) marker.setLatLng(e.latlng);
+    else {
+      marker = L.marker(e.latlng, {
+        icon: L.divIcon({
+          className: "",
+          html: `<div style="font-size:24px;">${FIXED_EMOJI}</div>`
+        })
+      }).addTo(map);
     }
+  });
 
-    paypal.Buttons({
-      createOrder: (data, actions) => {
-        return actions.order.create({
-          purchase_units: [{ amount: { value: "10.00" } }]
-        });
-      },
-      onApprove: (data, actions) => {
-        return actions.order.capture().then(() => {
-          canPublish = true;
-          publishBtn.disabled = false;
-          alert("Pago completado. Ya puedes publicar.");
-        });
-      }
-    }).render("#paypal-container");
+  function useCode() {
+    const code = promoCode.value.trim();
+    if (!code) return alert("Ingresa un código.");
 
-    function publishMessage() {
-      if (!selectedLatLng) return alert("Selecciona una ubicación.");
-      if (!canPublish) return alert("Debes pagar o usar un código.");
+    canPublish = true;
+    publishBtn.disabled = false;
+    paypalContainer.style.display = "none";
+    alert("Código válido. Puedes publicar sin pagar.");
+  }
 
-      alert("Mensaje enviado (simulado).");
+  paypal.Buttons({
+    createOrder: (data, actions) => {
+      return actions.order.create({
+        purchase_units: [{ amount: { value: "10.00" } }]
+      });
+    },
+    onApprove: (data, actions) => {
+      return actions.order.capture().then(() => {
+        canPublish = true;
+        publishBtn.disabled = false;
+        alert("Pago completado. Ya puedes publicar.");
+      });
     }
-  </script>
+  }).render("#paypal-container");
+
+  function publishMessage() {
+    if (!selectedLatLng) return alert("Selecciona una ubicación.");
+    if (!canPublish) return alert("Debes pagar o usar un código.");
+    alert("Mensaje enviado (simulado).");
+  }
+</script>
 
 </body>
 </html>
