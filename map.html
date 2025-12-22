@@ -8,7 +8,7 @@
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-  <!-- PayPal SDK (CLIENT ID YA INTEGRADO) -->
+  <!-- PayPal SDK -->
   <script src="https://www.paypal.com/sdk/js?client-id=AX55daDbCKwDRrwqHYXBsV8f0a7zMIWEVLOC1KzS8xo-uKje_G4poVe-_Foww1x00w-NzGrXfOPlBZk-&currency=USD"></script>
 
   <style>
@@ -24,12 +24,14 @@
       overflow: hidden;
     }
 
+    /* MAPA */
     #map {
       position: absolute;
       inset: 0;
       z-index: 1;
     }
 
+    /* PANEL */
     .panel {
       position: fixed;
       top: 0;
@@ -44,8 +46,7 @@
     }
 
     h2 {
-      margin-top: 0;
-      margin-bottom: 20px;
+      margin: 0 0 20px 0;
     }
 
     input, textarea {
@@ -92,22 +93,32 @@
       cursor: not-allowed;
     }
 
-    #paypal-container {
-      margin-top: 15px;
-      display: block;
-    }
-
     hr {
       border: none;
       border-top: 1px solid #222;
       margin: 16px 0;
     }
+
+    /* PAYPAL – ESTABLE, SIN TEMBLOR */
+    #paypal-container {
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 15px;
+    }
+
+    #paypal-container iframe {
+      transform: translateZ(0);
+    }
   </style>
 </head>
 <body>
 
+  <!-- MAPA -->
   <div id="map"></div>
 
+  <!-- PANEL -->
   <div class="panel">
     <h2>Deja tu mensaje 🌍</h2>
 
@@ -140,13 +151,14 @@
     let marker = null;
     let canPublish = false;
 
+    /* MAPA */
     const map = L.map("map", { zoomControl: false }).setView([20, 0], 2);
 
     L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
     ).addTo(map);
 
-    map.on("click", function (e) {
+    map.on("click", e => {
       selectedLatLng = e.latlng;
 
       if (marker) {
@@ -161,11 +173,12 @@
       }
     });
 
+    /* CÓDIGO PROMO */
     function useCode() {
       const code = promoCode.value.trim();
       if (!code) return alert("Ingresa un código.");
 
-      // Backend ya valida realmente
+      // El backend valida realmente
       canPublish = true;
       publishBtn.disabled = false;
       paypalContainer.style.display = "none";
@@ -173,6 +186,7 @@
       alert("Código válido. Puedes publicar sin pagar.");
     }
 
+    /* PAYPAL */
     paypal.Buttons({
       createOrder: (data, actions) => {
         return actions.order.create({
@@ -190,6 +204,7 @@
       }
     }).render("#paypal-container");
 
+    /* PUBLICAR */
     function publishMessage() {
       if (!selectedLatLng) return alert("Selecciona una ubicación.");
       if (!canPublish) return alert("Debes pagar o usar un código.");
