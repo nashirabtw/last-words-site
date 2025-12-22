@@ -31,7 +31,7 @@
       z-index: 1;
     }
 
-    /* PANEL — SIN SCROLL (CLAVE) */
+    /* PANEL */
     .panel {
       position: fixed;
       top: 0;
@@ -42,11 +42,12 @@
       padding: 20px;
       z-index: 9999;
       box-shadow: -10px 0 30px rgba(0,0,0,0.6);
-      overflow: hidden; /* 🔥 CLAVE ABSOLUTA */
+      overflow: hidden;
     }
 
     h2 {
       margin: 0 0 20px 0;
+      font-size: 1.4rem;
     }
 
     input, textarea {
@@ -73,14 +74,13 @@
 
     .btn {
       width: 100%;
-      background: white;
-      color: black;
       border: none;
       padding: 12px;
       font-size: 0.95rem;
       border-radius: 999px;
       cursor: pointer;
       margin-top: 10px;
+      transition: all 0.25s ease;
     }
 
     .btn.secondary {
@@ -88,9 +88,25 @@
       color: white;
     }
 
-    .btn:disabled {
-      opacity: 0.4;
+    /* 🔥 BOTÓN PRINCIPAL (PUBLICAR) */
+    .btn.primary {
+      background: white;
+      color: black;
+      font-weight: 600;
+      box-shadow: 0 0 0 rgba(255,255,255,0);
+    }
+
+    .btn.primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(255,255,255,0.25);
+    }
+
+    .btn.primary:disabled {
+      background: #444;
+      color: #aaa;
       cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
     }
 
     hr {
@@ -99,9 +115,9 @@
       margin: 14px 0;
     }
 
-    /* PAYPAL — COMPLETAMENTE ESTABLE */
+    /* PAYPAL ESTABLE */
     #paypal-container {
-      height: 52px;               /* altura FIJA */
+      height: 52px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -134,7 +150,8 @@
 
     <div id="paypal-container"></div>
 
-    <button class="btn" id="publishBtn" disabled onclick="publishMessage()">
+    <!-- 🔥 BOTÓN FINAL VISIBLE -->
+    <button class="btn primary" id="publishBtn" disabled onclick="publishMessage()">
       Publicar mensaje
     </button>
   </div>
@@ -196,7 +213,6 @@
       if (!selectedLatLng) return alert("Selecciona una ubicación.");
       if (!canPublish) return alert("Debes pagar o usar un código.");
 
-      console.log("Mensaje enviado");
       alert("Mensaje enviado (simulado).");
     }
   </script>
