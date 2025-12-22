@@ -1,274 +1,177 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Last Words — Mapa Global</title>
+  <meta charset="UTF-8" />
+  <title>Last-Words – Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Leaflet -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
 
-    <!-- PayPal -->
-    <script src="https://www.paypal.com/sdk/js?client-id=sb&currency=USD"></script>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-    <style>
-        body {
-            margin: 0;
-            background: #000;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-            display: flex;
-            height: 100vh;
-        }
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
 
-        /* Fondo animado premium */
-        #bg-anim {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-image: url("https://upload.wikimedia.org/wikipedia/commons/5/57/Mercator_projection_SW.jpg");
-            background-size: cover;
-            background-position: center;
-            opacity: 0.15;
-            filter: blur(3px);
-            z-index: -1;
-            animation: drift 40s linear infinite;
-        }
+    .panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 340px;
+      height: 100vh;
+      background: #0b0b0b;
+      padding: 20px;
+      box-shadow: -10px 0 30px rgba(0,0,0,0.6);
+      overflow-y: auto;
+    }
 
-        @keyframes drift {
-            0% { transform: scale(1) translate(0,0); }
-            50% { transform: scale(1.12) translate(-15px, 10px); }
-            100% { transform: scale(1) translate(0,0); }
-        }
+    h2 {
+      margin-bottom: 20px;
+    }
 
-        /* Mapa */
-        #map {
-            width: 70vw;
-            height: 100vh;
-        }
+    input, textarea {
+      width: 100%;
+      background: #151515;
+      border: 1px solid #333;
+      color: white;
+      padding: 10px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
 
-        /* Formulario */
-        #form {
-            width: 30vw;
-            height: 100vh;
-            padding: 25px;
-            background: rgba(0, 0, 0, 0.92);
-            border-left: 1px solid #222;
-            overflow-y: auto;
-        }
+    textarea {
+      resize: none;
+      height: 90px;
+    }
 
-        h2 {
-            font-weight: 300;
-            margin-top: 0;
-            font-size: 1.7rem;
-        }
+    .hint {
+      font-size: 0.8rem;
+      opacity: 0.6;
+      margin-bottom: 10px;
+    }
 
-        label {
-            font-size: 14px;
-            opacity: 0.85;
-        }
+    .btn {
+      width: 100%;
+      background: white;
+      color: black;
+      border: none;
+      padding: 12px;
+      font-size: 0.95rem;
+      border-radius: 999px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
 
-        input, textarea {
-            width: 100%;
-            padding: 10px;
-            margin-top: 4px;
-            margin-bottom: 14px;
-            border-radius: 4px;
-            border: none;
-            background: #181818;
-            color: #fff;
-            font-size: 15px;
-        }
+    .btn.secondary {
+      background: #222;
+      color: white;
+    }
 
-        textarea { resize: none; }
-
-        /* Blink para mensajes nuevos */
-        .blink {
-            animation: blink 0.7s steps(2, start) infinite;
-        }
-
-        @keyframes blink {
-            to { opacity: 0; }
-        }
-
-        /* Popup estilo cuaderno */
-        .popup-box {
-            background: #fff;
-            color: #000;
-            padding: 14px;
-            border-radius: 8px;
-            width: 210px;
-            font-size: 14px;
-            line-height: 1.3rem;
-        }
-
-        .popup-title {
-            font-weight: bold;
-            margin-bottom: 6px;
-        }
-
-        /* Movil */
-        @media(max-width: 900px) {
-            #map {
-                width: 100vw;
-                height: 60vh;
-            }
-            #form {
-                width: 100vw;
-                height: 40vh;
-            }
-        }
-    </style>
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  </style>
 </head>
-
 <body>
 
-    <div id="bg-anim"></div>
+<div id="map"></div>
 
-    <div id="map"></div>
+<div class="panel">
+  <h2>Deja tu mensaje 🌍</h2>
 
-    <div id="form">
-        <h2>Deja tu mensaje 🌍</h2>
+  <input type="text" id="name" placeholder="Nombre" />
+  <textarea id="message" placeholder="Mensaje"></textarea>
+  <input type="text" id="country" placeholder="País" />
 
-        <label>Nombre</label>
-        <input id="name" type="text">
+  <div class="hint">📍 El punto se colocará donde hagas clic en el mapa.</div>
 
-        <label>Emoji (tu pin en el mapa)</label>
-        <input id="emoji" type="text" placeholder="❤️ 😢 ✨">
+  <hr style="border-color:#222; margin:15px 0;">
 
-        <label>País</label>
-        <input id="country" type="text">
+  <div class="hint">¿Tienes un código especial?</div>
+  <input type="text" id="promoCode" placeholder="Ingresa tu código" />
+  <button class="btn secondary" onclick="useCode()">Usar código</button>
 
-        <label>Mensaje</label>
-        <textarea id="message" rows="4"></textarea>
+  <button class="btn" id="publishBtn" disabled onclick="publishMessage()">
+    Publicar mensaje
+  </button>
+</div>
 
-        <label>Ubicación seleccionada</label>
-        <input id="latitude" type="text" readonly>
-        <input id="longitude" type="text" readonly>
-
-        <div id="paypal-button-container"></div>
-    </div>
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-const API_URL = "https://last-words-backend.onrender.com";
-let paymentToken = null;
+  const FIXED_EMOJI = "📍";
+  let selectedLatLng = null;
+  let marker = null;
+  let codeValid = false;
 
-// -----------------------
-// MAPA OSCURO PREMIUM
-// -----------------------
-const map = L.map("map", {
-    zoomControl: true,
-    worldCopyJump: true,
-}).setView([20, 0], 2.3);
+  const map = L.map("map", { zoomControl: false }).setView([20, 0], 2);
 
-L.tileLayer(
+  L.tileLayer(
     "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    { maxZoom: 6, minZoom: 2 }
-).addTo(map);
+    { attribution: "© OpenStreetMap" }
+  ).addTo(map);
 
-let markerSelect = null;
+  map.on("click", function (e) {
+    selectedLatLng = e.latlng;
 
-map.on("click", (e) => {
-    const lat = e.latlng.lat;
-    const lng = e.latlng.lng;
-
-    document.getElementById("latitude").value = lat;
-    document.getElementById("longitude").value = lng;
-
-    if (markerSelect) map.removeLayer(markerSelect);
-
-    markerSelect = L.marker([lat, lng]).addTo(map);
-});
-
-// -----------------------
-// CARGAR MENSAJES
-// -----------------------
-async function loadMessages() {
-    const r = await fetch(`${API_URL}/messages`);
-    const msgs = await r.json();
-
-    msgs.forEach(msg => {
-        const emojiIcon = L.divIcon({
-            html: `<div style="font-size:28px;">${msg.emoji}</div>`,
-            className: "",
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
-        });
-
-        const mk = L.marker([msg.latitude, msg.longitude], { icon: emojiIcon }).addTo(map);
-
-        // si es nuevo (<5 min)
-        const creado = new Date(msg.created_at);
-        if ((Date.now() - creado) / 1000 < 300) {
-            mk._icon.classList.add("blink");
-            setTimeout(() => mk._icon.classList.remove("blink"), 5000);
-        }
-
-        mk.bindPopup(`
-            <div class="popup-box">
-                <div class="popup-title">${msg.name} — ${msg.country}</div>
-                <div>${msg.message}</div>
-            </div>
-        `);
-    });
-}
-loadMessages();
-
-// -----------------------
-// PAYPAL $10
-// -----------------------
-paypal.Buttons({
-    createOrder: (data, actions) => {
-        return actions.order.create({
-            purchase_units: [{
-                amount: { value: "10.00" }
-            }]
-        });
-    },
-
-    onApprove: async () => {
-        const r = await fetch(`${API_URL}/payment-success`, { method: "POST" });
-        const j = await r.json();
-        paymentToken = j.token;
-        sendMessage();
+    if (marker) {
+      marker.setLatLng(e.latlng);
+    } else {
+      marker = L.marker(e.latlng, {
+        icon: L.divIcon({
+          className: "",
+          html: `<div style="font-size:24px;">${FIXED_EMOJI}</div>`
+        })
+      }).addTo(map);
     }
-}).render("#paypal-button-container");
+  });
 
-// -----------------------
-// ENVIAR MENSAJE
-// -----------------------
-async function sendMessage() {
+  function useCode() {
+    const code = document.getElementById("promoCode").value.trim();
 
-    if (!paymentToken) return alert("Error con el pago.");
+    // 🔐 Código temporal (luego se conecta al backend)
+    if (code === "FREE2025") {
+      codeValid = true;
+      alert("Código válido. Puedes publicar sin pagar.");
+      document.getElementById("publishBtn").disabled = false;
+    } else {
+      alert("Código inválido.");
+    }
+  }
 
-    const payload = {
-        name: name.value,
-        emoji: emoji.value,
-        country: country.value,
-        message: message.value,
-        latitude: parseFloat(latitude.value),
-        longitude: parseFloat(longitude.value)
+  function publishMessage() {
+    if (!selectedLatLng) {
+      alert("Selecciona una ubicación en el mapa.");
+      return;
+    }
+
+    const data = {
+      name: document.getElementById("name").value,
+      message: document.getElementById("message").value,
+      country: document.getElementById("country").value,
+      emoji: FIXED_EMOJI,
+      lat: selectedLatLng.lat,
+      lng: selectedLatLng.lng
     };
 
-    const res = await fetch(`${API_URL}/send-message`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "x-payment-token": paymentToken
-        },
-        body: JSON.stringify(payload)
-    });
+    console.log("Mensaje listo para enviar:", data);
 
-    if (res.ok) {
-        alert("Tu mensaje ha sido publicado ✔");
-        location.reload();
-    } else {
-        alert("No se pudo guardar el mensaje.");
-    }
-}
+    alert("Mensaje enviado (simulado).");
+  }
 </script>
 
 </body>
