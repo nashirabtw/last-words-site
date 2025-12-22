@@ -31,7 +31,7 @@
       z-index: 1;
     }
 
-    /* PANEL */
+    /* PANEL — SIN SCROLL (CLAVE) */
     .panel {
       position: fixed;
       top: 0;
@@ -41,8 +41,8 @@
       background: #0b0b0b;
       padding: 20px;
       z-index: 9999;
-      overflow-y: auto;
       box-shadow: -10px 0 30px rgba(0,0,0,0.6);
+      overflow: hidden; /* 🔥 CLAVE ABSOLUTA */
     }
 
     h2 {
@@ -62,7 +62,7 @@
 
     textarea {
       resize: none;
-      height: 90px;
+      height: 80px;
     }
 
     .hint {
@@ -96,29 +96,27 @@
     hr {
       border: none;
       border-top: 1px solid #222;
-      margin: 16px 0;
+      margin: 14px 0;
     }
 
-    /* PAYPAL – ESTABLE, SIN TEMBLOR */
+    /* PAYPAL — COMPLETAMENTE ESTABLE */
     #paypal-container {
-      min-height: 52px;
+      height: 52px;               /* altura FIJA */
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-top: 15px;
+      margin-top: 12px;
     }
 
     #paypal-container iframe {
-      transform: translateZ(0);
+      transform: translate3d(0,0,0);
     }
   </style>
 </head>
 <body>
 
-  <!-- MAPA -->
   <div id="map"></div>
 
-  <!-- PANEL -->
   <div class="panel">
     <h2>Deja tu mensaje 🌍</h2>
 
@@ -134,7 +132,6 @@
     <input id="promoCode" placeholder="Ingresa tu código" />
     <button class="btn secondary" onclick="useCode()">Usar código</button>
 
-    <!-- PAYPAL -->
     <div id="paypal-container"></div>
 
     <button class="btn" id="publishBtn" disabled onclick="publishMessage()">
@@ -142,7 +139,7 @@
     </button>
   </div>
 
-  <!-- Leaflet JS -->
+  <!-- Leaflet -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
@@ -151,7 +148,6 @@
     let marker = null;
     let canPublish = false;
 
-    /* MAPA */
     const map = L.map("map", { zoomControl: false }).setView([20, 0], 2);
 
     L.tileLayer(
@@ -160,10 +156,8 @@
 
     map.on("click", e => {
       selectedLatLng = e.latlng;
-
-      if (marker) {
-        marker.setLatLng(e.latlng);
-      } else {
+      if (marker) marker.setLatLng(e.latlng);
+      else {
         marker = L.marker(e.latlng, {
           icon: L.divIcon({
             className: "",
@@ -173,26 +167,20 @@
       }
     });
 
-    /* CÓDIGO PROMO */
     function useCode() {
       const code = promoCode.value.trim();
       if (!code) return alert("Ingresa un código.");
 
-      // El backend valida realmente
       canPublish = true;
       publishBtn.disabled = false;
       paypalContainer.style.display = "none";
-
       alert("Código válido. Puedes publicar sin pagar.");
     }
 
-    /* PAYPAL */
     paypal.Buttons({
       createOrder: (data, actions) => {
         return actions.order.create({
-          purchase_units: [{
-            amount: { value: "10.00" }
-          }]
+          purchase_units: [{ amount: { value: "10.00" } }]
         });
       },
       onApprove: (data, actions) => {
@@ -204,21 +192,11 @@
       }
     }).render("#paypal-container");
 
-    /* PUBLICAR */
     function publishMessage() {
       if (!selectedLatLng) return alert("Selecciona una ubicación.");
       if (!canPublish) return alert("Debes pagar o usar un código.");
 
-      const data = {
-        name: name.value,
-        message: message.value,
-        country: country.value,
-        emoji: FIXED_EMOJI,
-        lat: selectedLatLng.lat,
-        lng: selectedLatLng.lng
-      };
-
-      console.log("Enviar al backend:", data);
+      console.log("Mensaje enviado");
       alert("Mensaje enviado (simulado).");
     }
   </script>
