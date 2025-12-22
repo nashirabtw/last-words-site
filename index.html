@@ -1,215 +1,133 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Paga y deja tu mensaje</title>
-
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
+  <title>Last-Words</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
-    body { font-family: Arial, sans-serif; max-width: 900px; margin: 30px auto; }
-    .message { border-bottom: 1px solid #ddd; padding: 8px 0; }
-    #map { height: 420px; border-radius: 10px; border: 1px solid #ddd; margin: 10px 0 20px; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-    /* Icono con “pulso” para mensajes nuevos */
-    .pulse {
+    body {
+      background: black;
+      color: white;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ⭐ Fondo de estrellas */
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 0;
+    }
+
+    .container {
       position: relative;
-      width: 34px; height: 34px;
-      border-radius: 50%;
-      background: #ff4757;
-      display: flex; align-items: center; justify-content: center;
-      color: #fff; font-size: 18px; font-weight: bold;
-      animation: pulse 1s ease-in-out infinite;
-      box-shadow: 0 0 0 0 rgba(255,71,87, 0.7);
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,71,87, 0.7); }
-      70% { transform: scale(1.08); box-shadow: 0 0 0 15px rgba(255,71,87, 0); }
-      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,71,87, 0); }
-    }
-    .pin {
-      width: 34px; height: 34px;
-      border-radius: 50%;
-      background: #2d3436;
-      display: flex; align-items: center; justify-content: center;
-      color: #fff; font-size: 18px; font-weight: bold;
+      z-index: 1;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
     }
 
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    .content {
+      max-width: 600px;
+    }
+
+    h1 {
+      font-size: 3.5rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    p {
+      font-size: 1.1rem;
+      opacity: 0.85;
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+
+    .btn {
+      background: white;
+      color: black;
+      border: none;
+      padding: 14px 32px;
+      font-size: 1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .btn:hover {
+      transform: scale(1.05);
+      background: #f2f2f2;
+    }
   </style>
 </head>
 <body>
 
-<h2>Paga y deja tu mensaje</h2>
+  <!-- Fondo estrellas -->
+  <canvas id="stars"></canvas>
 
-<div class="row">
-  <div>
-    <!-- PAYPAL -->
-    <div id="paypal-button-container"></div>
-
-    <!-- FORMULARIO -->
-    <form id="messageForm" style="display:none; margin-top: 16px;">
-      <input id="name" placeholder="Tu nombre" required style="width:100%; padding:8px;"><br><br>
-      <textarea id="message" placeholder="Tu mensaje" required style="width:100%; padding:8px;"></textarea><br><br>
-      <input id="country" placeholder="País" required style="width:100%; padding:8px;"><br><br>
-      <input id="emoji" placeholder="Emoji (ej: ❤️, 🎉, 😎)" required style="width:100%; padding:8px;"><br><br>
-      <input id="location" placeholder="Ciudad / Dirección (ej: 'Madrid, España')" required style="width:100%; padding:8px;"><br><br>
-      <button type="submit" style="padding:10px 16px;">Enviar mensaje</button>
-    </form>
-
-    <hr>
-
-    <h2>Mensajes</h2>
-    <div id="messages">Cargando mensajes...</div>
+  <div class="container">
+    <div class="content">
+      <h1>Last-Words</h1>
+      <p>
+        Leave a message somewhere in the world.<br>
+        One last thought, one last feeling.
+      </p>
+      <button class="btn" onclick="enterMap()">Enter the Map</button>
+    </div>
   </div>
 
-  <div>
-    <h2>Mapa</h2>
-    <div id="map"></div>
-  </div>
-</div>
-
-<!-- PAYPAL SDK -->
-<script src="https://www.paypal.com/sdk/js?client-id=AX55daDbCKwDRrwqHYXBsV8f0a7zMIWEVLOC1KzS8xo-uKje_G4poVe-_Foww1x00w-NzGrXfOPlBZk-&currency=USD"></script>
-
-<!-- Leaflet JS -->
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-  crossorigin=""
-></script>
-
-<script>
-/* URL DEL BACKEND EN PRODUCCIÓN */
-const API = "https://last-words-backend.onrender.com";
-
-let paymentToken = null;
-
-/* ============ MAPA ============ */
-const map = L.map('map').setView([20, 0], 2); // mundo
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap'
-}).addTo(map);
-
-function markerIcon(emoji, pulsing=false) {
-  const cls = pulsing ? 'pulse' : 'pin';
-  return L.divIcon({
-    className: '',
-    html: `<div class="${cls}">${emoji || "📍"}</div>`,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17]
-  });
-}
-
-function addMarker(lat, lon, emoji, popupHtml, pulsing=false) {
-  if (lat == null || lon == null) return;
-  L.marker([lat, lon], { icon: markerIcon(emoji, pulsing) })
-    .addTo(map)
-    .bindPopup(popupHtml);
-}
-
-/* ============ PAYPAL ============ */
-paypal.Buttons({
-  createOrder: (data, actions) => actions.order.create({
-    purchase_units: [{ amount: { value: "8.00" } }]
-  }),
-  onApprove: async (data, actions) => {
-    await actions.order.capture();
-    const res = await fetch(`${API}/payment-success`, { method: "POST" });
-    const dataToken = await res.json();
-    paymentToken = dataToken.token;
-    document.getElementById("messageForm").style.display = "block";
-    alert("Pago completado. Puedes enviar UN mensaje.");
-  }
-}).render("#paypal-button-container");
-
-/* ============ ENVIAR ============ */
-document.getElementById("messageForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!paymentToken) { alert("Debes pagar antes de enviar."); return; }
-
-  const payload = {
-    name: document.getElementById("name").value,
-    message: document.getElementById("message").value,
-    country: document.getElementById("country").value,
-    emoji: document.getElementById("emoji").value,
-    location: document.getElementById("location").value
-  };
-
-  const res = await fetch(`${API}/send-message`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-payment-token": paymentToken
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const data = await res.json();
-
-  if (data.status === "guardado") {
-    alert("Mensaje enviado 🎉");
-    // marcador “nuevo” con pulso por 5s
-    if (data.lat != null && data.lon != null) {
-      const popup = `<strong>${payload.name}</strong> ${payload.emoji}<br>${payload.message}<br><small>${payload.location}</small>`;
-      const m = L.marker([data.lat, data.lon], { icon: markerIcon(payload.emoji, true) })
-        .addTo(map).bindPopup(popup);
-      setTimeout(() => {
-        // reemplazar por icono normal
-        m.setIcon(markerIcon(payload.emoji, false));
-      }, 5000);
+  <script>
+    function enterMap() {
+      window.location.href = "map.html";
     }
-    paymentToken = null;
-    e.target.reset();
-    cargarMensajes(); // refresca lista + mapa
-  } else {
-    alert("Error al enviar.");
-  }
-});
 
-/* ============ CARGAR MENSAJES ============ */
-async function cargarMensajes() {
-  try {
-    const res = await fetch(`${API}/messages`);
-    const data = await res.json();
+    /* ⭐ Animación de estrellas */
+    const canvas = document.getElementById("stars");
+    const ctx = canvas.getContext("2d");
 
-    // lista
-    const container = document.getElementById("messages");
-    container.innerHTML = "";
-    if (!Array.isArray(data) || data.length === 0) {
-      container.innerText = "No hay mensajes aún.";
-    } else {
-      data.forEach(m => {
-        const div = document.createElement("div");
-        div.className = "message";
-        div.innerHTML = `<strong>📍 ${m.country} ${m.emoji}</strong><br>${m.name}: ${m.message}<br><small>${m.location || ""}</small>`;
-        container.appendChild(div);
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    const stars = Array.from({ length: 120 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.5 + 0.5,
+      o: Math.random()
+    }));
+
+    function drawStars() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "white";
+
+      stars.forEach(s => {
+        ctx.globalAlpha = s.o;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
       });
+
+      requestAnimationFrame(drawStars);
     }
 
-    // mapa
-    // limpiar todas las capas de marcadores (excepto el tile layer)
-    map.eachLayer(layer => {
-      if (!(layer instanceof L.TileLayer)) map.removeLayer(layer);
-    });
-
-    data.forEach(m => {
-      const popup = `<strong>${m.name}</strong> ${m.emoji}<br>${m.message}<br><small>${m.location || ""}</small>`;
-      addMarker(m.lat, m.lon, m.emoji, popup, false);
-    });
-  } catch (err) {
-    document.getElementById("messages").innerText = "Error cargando mensajes.";
-  }
-}
-
-cargarMensajes();
-</script>
+    drawStars();
+  </script>
 
 </body>
 </html>
