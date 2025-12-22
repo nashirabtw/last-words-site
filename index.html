@@ -1,296 +1,215 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Last Words</title>
+  <meta charset="UTF-8" />
+  <title>Paga y deja tu mensaje</title>
 
-<!-- Leaflet -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
 
-<style>
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{
-  margin:0;
-  font-family:Arial, sans-serif;
-  background:#05070c;
-  color:white;
-}
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 30px auto; }
+    .message { border-bottom: 1px solid #ddd; padding: 8px 0; }
+    #map { height: 420px; border-radius: 10px; border: 1px solid #ddd; margin: 10px 0 20px; }
 
-/* ===== ESTRELLAS ===== */
-body::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  background:
-    radial-gradient(1px 1px at 20% 30%, white, transparent),
-    radial-gradient(1px 1px at 70% 20%, white, transparent),
-    radial-gradient(1px 1px at 40% 80%, white, transparent),
-    radial-gradient(1px 1px at 90% 60%, white, transparent);
-  opacity:.6;
-  animation:twinkle 6s infinite alternate;
-  z-index:-1;
-}
-@keyframes twinkle{from{opacity:.4}to{opacity:.8}}
+    /* Icono con “pulso” para mensajes nuevos */
+    .pulse {
+      position: relative;
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: #ff4757;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 18px; font-weight: bold;
+      animation: pulse 1s ease-in-out infinite;
+      box-shadow: 0 0 0 0 rgba(255,71,87, 0.7);
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,71,87, 0.7); }
+      70% { transform: scale(1.08); box-shadow: 0 0 0 15px rgba(255,71,87, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,71,87, 0); }
+    }
+    .pin {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: #2d3436;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 18px; font-weight: bold;
+    }
 
-/* ===== PANTALLA 1 ===== */
-.hero{
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  text-align:center;
-  padding:20px;
-}
-.hero h1{
-  font-size:56px;
-  font-weight:300;
-  margin:0;
-}
-.hero p{
-  margin:14px 0 28px;
-  opacity:.75;
-}
-.hero button{
-  padding:14px 28px;
-  font-size:16px;
-  border-radius:999px;
-  border:none;
-  cursor:pointer;
-  background:#2563eb;
-  color:white;
-}
-.hero button:hover{background:#1e40af}
-
-/* ===== PANTALLA 2 ===== */
-.section{
-  min-height:100vh;
-  padding:40px 20px 60px;
-}
-.container{
-  max-width:1100px;
-  margin:auto;
-}
-.grid{
-  display:grid;
-  grid-template-columns:1.6fr 1fr;
-  gap:20px;
-}
-@media(max-width:900px){
-  .grid{grid-template-columns:1fr}
-}
-
-/* Cards */
-.card{
-  background:#0b1220;
-  border:1px solid #1f2937;
-  border-radius:14px;
-  padding:16px;
-}
-
-/* Map */
-#map{
-  height:520px;
-  border-radius:14px;
-  border:1px solid #1f2937;
-}
-
-/* Pay / form */
-.price{
-  display:flex;
-  justify-content:space-between;
-  background:#111827;
-  padding:12px;
-  border-radius:12px;
-  margin-bottom:14px;
-}
-.badge{
-  background:#0a2a1a;
-  color:#7CFFB2;
-  padding:6px 12px;
-  border-radius:999px;
-  font-size:12px;
-}
-label{font-size:12px;opacity:.7}
-input,textarea,button{
-  width:100%;
-  margin:6px 0 12px;
-  padding:10px;
-  border-radius:10px;
-  border:none;
-}
-input,textarea{
-  background:#0f172a;
-  color:white;
-}
-button{
-  background:#2563eb;
-  color:white;
-  cursor:pointer;
-}
-.locked{
-  opacity:.5;
-  pointer-events:none;
-}
-
-/* Messages */
-.messages{
-  max-height:260px;
-  overflow:auto;
-}
-.message{
-  border-bottom:1px solid rgba(255,255,255,.1);
-  padding:8px 0;
-}
-
-/* Pins */
-.pulse{
-  width:34px;height:34px;border-radius:50%;
-  background:#2563eb;
-  display:flex;align-items:center;justify-content:center;
-  animation:pulse 1s infinite;
-}
-@keyframes pulse{
-  0%{box-shadow:0 0 0 0 rgba(37,99,235,.7)}
-  70%{box-shadow:0 0 0 15px rgba(37,99,235,0)}
-  100%{box-shadow:0 0 0 0 rgba(37,99,235,0)}
-}
-.pin{
-  width:34px;height:34px;border-radius:50%;
-  background:#111827;
-  display:flex;align-items:center;justify-content:center;
-}
-</style>
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  </style>
 </head>
-
 <body>
 
-<!-- ===== HERO ===== -->
-<section class="hero">
-  <h1>Last Words</h1>
-  <p>Un mensaje. Un lugar. Un momento.</p>
-  <button onclick="document.getElementById('mapSection').scrollIntoView()">
-    Dejar un mensaje
-  </button>
-</section>
+<h2>Paga y deja tu mensaje</h2>
 
-<!-- ===== MAPA ===== -->
-<section class="section" id="mapSection">
-  <div class="container">
-    <div class="grid">
+<div class="row">
+  <div>
+    <!-- PAYPAL -->
+    <div id="paypal-button-container"></div>
 
-      <div class="card">
-        <div id="map"></div>
-      </div>
+    <!-- FORMULARIO -->
+    <form id="messageForm" style="display:none; margin-top: 16px;">
+      <input id="name" placeholder="Tu nombre" required style="width:100%; padding:8px;"><br><br>
+      <textarea id="message" placeholder="Tu mensaje" required style="width:100%; padding:8px;"></textarea><br><br>
+      <input id="country" placeholder="País" required style="width:100%; padding:8px;"><br><br>
+      <input id="emoji" placeholder="Emoji (ej: ❤️, 🎉, 😎)" required style="width:100%; padding:8px;"><br><br>
+      <input id="location" placeholder="Ciudad / Dirección (ej: 'Madrid, España')" required style="width:100%; padding:8px;"><br><br>
+      <button type="submit" style="padding:10px 16px;">Enviar mensaje</button>
+    </form>
 
-      <div class="card">
-        <div class="price">
-          <strong>$8 USD</strong>
-          <span class="badge">1 mensaje</span>
-        </div>
+    <hr>
 
-        <div id="paypal-button-container"></div>
-
-        <form id="messageForm" class="locked">
-          <label>Nombre</label>
-          <input id="name" required>
-
-          <label>Mensaje</label>
-          <textarea id="message" required></textarea>
-
-          <label>País</label>
-          <input id="country" required>
-
-          <label>Ciudad / Dirección</label>
-          <input id="location" required>
-
-          <button type="submit">Publicar</button>
-        </form>
-
-        <h3>Mensajes</h3>
-        <div class="messages" id="messages"></div>
-      </div>
-
-    </div>
+    <h2>Mensajes</h2>
+    <div id="messages">Cargando mensajes...</div>
   </div>
-</section>
 
-<!-- PayPal -->
+  <div>
+    <h2>Mapa</h2>
+    <div id="map"></div>
+  </div>
+</div>
+
+<!-- PAYPAL SDK -->
 <script src="https://www.paypal.com/sdk/js?client-id=AX55daDbCKwDRrwqHYXBsV8f0a7zMIWEVLOC1KzS8xo-uKje_G4poVe-_Foww1x00w-NzGrXfOPlBZk-&currency=USD"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Leaflet JS -->
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
 
 <script>
-const API="https://last-words-backend.onrender.com";
-const EMOJI="💫";
-let token=null;
+/* URL DEL BACKEND EN PRODUCCIÓN */
+const API = "https://last-words-backend.onrender.com";
 
-/* Map */
-const map=L.map("map").setView([20,0],2);
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png").addTo(map);
+let paymentToken = null;
 
-function icon(pulse){
+/* ============ MAPA ============ */
+const map = L.map('map').setView([20, 0], 2); // mundo
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap'
+}).addTo(map);
+
+function markerIcon(emoji, pulsing=false) {
+  const cls = pulsing ? 'pulse' : 'pin';
   return L.divIcon({
-    html:`<div class="${pulse?'pulse':'pin'}">${EMOJI}</div>`,
-    iconSize:[34,34],
-    iconAnchor:[17,17]
+    className: '',
+    html: `<div class="${cls}">${emoji || "📍"}</div>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17]
   });
 }
 
-/* PayPal */
+function addMarker(lat, lon, emoji, popupHtml, pulsing=false) {
+  if (lat == null || lon == null) return;
+  L.marker([lat, lon], { icon: markerIcon(emoji, pulsing) })
+    .addTo(map)
+    .bindPopup(popupHtml);
+}
+
+/* ============ PAYPAL ============ */
 paypal.Buttons({
-  createOrder:(d,a)=>a.order.create({purchase_units:[{amount:{value:"8.00"}}]}),
-  onApprove:async(d,a)=>{
-    await a.order.capture();
-    const r=await fetch(`${API}/payment-success`,{method:"POST"});
-    const j=await r.json();
-    token=j.token;
-    document.getElementById("messageForm").classList.remove("locked");
+  createOrder: (data, actions) => actions.order.create({
+    purchase_units: [{ amount: { value: "8.00" } }]
+  }),
+  onApprove: async (data, actions) => {
+    await actions.order.capture();
+    const res = await fetch(`${API}/payment-success`, { method: "POST" });
+    const dataToken = await res.json();
+    paymentToken = dataToken.token;
+    document.getElementById("messageForm").style.display = "block";
+    alert("Pago completado. Puedes enviar UN mensaje.");
   }
 }).render("#paypal-button-container");
 
-/* Send */
-document.getElementById("messageForm").onsubmit=async e=>{
+/* ============ ENVIAR ============ */
+document.getElementById("messageForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const payload={
-    name:name.value,
-    message:message.value,
-    country:country.value,
-    location:location.value,
-    emoji:EMOJI
-  };
-  const r=await fetch(`${API}/send-message`,{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "x-payment-token":token
-    },
-    body:JSON.stringify(payload)
-  });
-  const j=await r.json();
-  if(j.status==="guardado"){
-    L.marker([j.lat,j.lon],{icon:icon(true)}).addTo(map);
-    setTimeout(()=>map.eachLayer(l=>{if(l.options?.icon)l.setIcon(icon(false))}),5000);
-    e.target.reset();
-    token=null;
-    document.getElementById("messageForm").classList.add("locked");
-    load();
-  }
-};
+  if (!paymentToken) { alert("Debes pagar antes de enviar."); return; }
 
-/* Load messages */
-async function load(){
-  const r=await fetch(`${API}/messages`);
-  const d=await r.json();
-  const box=document.getElementById("messages");
-  box.innerHTML="";
-  d.forEach(m=>{
-    box.innerHTML+=`<div class="message"><b>${EMOJI} ${m.country}</b><br>${m.name}: ${m.message}</div>`;
-    if(m.lat&&m.lon)L.marker([m.lat,m.lon],{icon:icon(false)}).addTo(map);
+  const payload = {
+    name: document.getElementById("name").value,
+    message: document.getElementById("message").value,
+    country: document.getElementById("country").value,
+    emoji: document.getElementById("emoji").value,
+    location: document.getElementById("location").value
+  };
+
+  const res = await fetch(`${API}/send-message`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-payment-token": paymentToken
+    },
+    body: JSON.stringify(payload)
   });
+
+  const data = await res.json();
+
+  if (data.status === "guardado") {
+    alert("Mensaje enviado 🎉");
+    // marcador “nuevo” con pulso por 5s
+    if (data.lat != null && data.lon != null) {
+      const popup = `<strong>${payload.name}</strong> ${payload.emoji}<br>${payload.message}<br><small>${payload.location}</small>`;
+      const m = L.marker([data.lat, data.lon], { icon: markerIcon(payload.emoji, true) })
+        .addTo(map).bindPopup(popup);
+      setTimeout(() => {
+        // reemplazar por icono normal
+        m.setIcon(markerIcon(payload.emoji, false));
+      }, 5000);
+    }
+    paymentToken = null;
+    e.target.reset();
+    cargarMensajes(); // refresca lista + mapa
+  } else {
+    alert("Error al enviar.");
+  }
+});
+
+/* ============ CARGAR MENSAJES ============ */
+async function cargarMensajes() {
+  try {
+    const res = await fetch(`${API}/messages`);
+    const data = await res.json();
+
+    // lista
+    const container = document.getElementById("messages");
+    container.innerHTML = "";
+    if (!Array.isArray(data) || data.length === 0) {
+      container.innerText = "No hay mensajes aún.";
+    } else {
+      data.forEach(m => {
+        const div = document.createElement("div");
+        div.className = "message";
+        div.innerHTML = `<strong>📍 ${m.country} ${m.emoji}</strong><br>${m.name}: ${m.message}<br><small>${m.location || ""}</small>`;
+        container.appendChild(div);
+      });
+    }
+
+    // mapa
+    // limpiar todas las capas de marcadores (excepto el tile layer)
+    map.eachLayer(layer => {
+      if (!(layer instanceof L.TileLayer)) map.removeLayer(layer);
+    });
+
+    data.forEach(m => {
+      const popup = `<strong>${m.name}</strong> ${m.emoji}<br>${m.message}<br><small>${m.location || ""}</small>`;
+      addMarker(m.lat, m.lon, m.emoji, popup, false);
+    });
+  } catch (err) {
+    document.getElementById("messages").innerText = "Error cargando mensajes.";
+  }
 }
-load();
+
+cargarMensajes();
 </script>
+
 </body>
 </html>
