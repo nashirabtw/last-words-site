@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Last-Words – Map</title>
@@ -24,14 +24,12 @@
       overflow: hidden;
     }
 
-    /* MAPA */
     #map {
       position: absolute;
       inset: 0;
       z-index: 1;
     }
 
-    /* PANEL */
     .panel {
       position: fixed;
       top: 0;
@@ -39,7 +37,7 @@
       width: 340px;
       height: 100vh;
       background: #0b0b0b;
-      padding: 20px 20px 90px; /* espacio para CTA */
+      padding: 20px 20px 90px;
       z-index: 9999;
       box-shadow: -10px 0 30px rgba(0,0,0,0.6);
       overflow: hidden;
@@ -87,13 +85,6 @@
       margin-top: 10px;
     }
 
-    hr {
-      border: none;
-      border-top: 1px solid #222;
-      margin: 14px 0;
-    }
-
-    /* PAYPAL */
     #paypal-container {
       height: 52px;
       display: flex;
@@ -102,7 +93,13 @@
       margin-top: 12px;
     }
 
-    /* 🔥 CTA FIJO ABAJO */
+    .status {
+      font-size: 0.85rem;
+      margin-top: 8px;
+      min-height: 18px;
+      opacity: 0.85;
+    }
+
     .cta {
       position: absolute;
       bottom: 0;
@@ -125,7 +122,6 @@
       font-size: 1rem;
       padding: 14px;
       border-radius: 999px;
-      transition: all 0.25s ease;
     }
 
     .cta button:disabled {
@@ -140,26 +136,26 @@
 <div id="map"></div>
 
 <div class="panel">
-  <h2>Deja tu mensaje 🌍</h2>
+  <h2>Leave your message 🌍</h2>
 
-  <input id="name" placeholder="Nombre" />
-  <textarea id="message" placeholder="Mensaje"></textarea>
-  <input id="country" placeholder="País" />
+  <input id="name" placeholder="Name" />
+  <textarea id="message" placeholder="Message"></textarea>
+  <input id="country" placeholder="Country" />
 
-  <div class="hint">📍 Haz clic en el mapa para elegir la ubicación.</div>
+  <div class="hint">📍 Tap the map to choose the location.</div>
 
-  <hr />
+  <hr style="border:none;border-top:1px solid #222;margin:14px 0;">
 
-  <div class="hint">¿Tienes un código especial?</div>
-  <input id="promoCode" placeholder="Ingresa tu código" />
-  <button class="btn secondary" onclick="useCode()">Usar código</button>
+  <div class="hint">Have a promo code?</div>
+  <input id="promoCode" placeholder="Enter code" />
+  <button class="btn secondary" onclick="useCode()">Use code</button>
+  <div class="status" id="codeStatus"></div>
 
   <div id="paypal-container"></div>
 
-  <!-- CTA -->
   <div class="cta">
     <button id="publishBtn" disabled onclick="publishMessage()">
-      Publicar mensaje
+      Publish message
     </button>
   </div>
 </div>
@@ -167,40 +163,41 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
+  /* =======================
+     CONFIG
+  ======================= */
   const FIXED_EMOJI = "📍";
+
+  // 👉 CÓDIGOS ACTIVOS
+  const PROMO_CODES = ["TIKTOK", "FREE", "TEST"];
+
+  /* =======================
+     STATE
+  ======================= */
   let selectedLatLng = null;
   let marker = null;
   let canPublish = false;
+  let usedCodes = JSON.parse(localStorage.getItem("usedPromoCodes") || "[]");
 
+  /* =======================
+     MAP
+  ======================= */
   const map = L.map("map", { zoomControl: false }).setView([20, 0], 2);
-
-  L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-  ).addTo(map);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png").addTo(map);
 
   map.on("click", e => {
     selectedLatLng = e.latlng;
     if (marker) marker.setLatLng(e.latlng);
     else {
       marker = L.marker(e.latlng, {
-        icon: L.divIcon({
-          className: "",
-          html: `<div style="font-size:24px;">${FIXED_EMOJI}</div>`
-        })
+        icon: L.divIcon({ html: `<div style="font-size:24px;">${FIXED_EMOJI}</div>` })
       }).addTo(map);
     }
   });
 
-  function useCode() {
-    const code = promoCode.value.trim();
-    if (!code) return alert("Ingresa un código.");
-
-    canPublish = true;
-    publishBtn.disabled = false;
-    paypalContainer.style.display = "none";
-    alert("Código válido. Puedes publicar sin pagar.");
-  }
-
+  /* =======================
+     PAYPAL
+  ======================= */
   paypal.Buttons({
     createOrder: (data, actions) => {
       return actions.order.create({
@@ -210,16 +207,60 @@
     onApprove: (data, actions) => {
       return actions.order.capture().then(() => {
         canPublish = true;
-        publishBtn.disabled = false;
-        alert("Pago completado. Ya puedes publicar.");
+        document.getElementById("publishBtn").disabled = false;
+        document.getElementById("codeStatus").textContent =
+          "Payment completed. You can publish.";
       });
     }
   }).render("#paypal-container");
 
+  /* =======================
+     PROMO CODE (1 USE ONLY)
+  ======================= */
+  function useCode() {
+    const input = document.getElementById("promoCode");
+    const status = document.getElementById("codeStatus");
+    const code = input.value.trim().toUpperCase();
+
+    if (!code) {
+      status.textContent = "Enter a code.";
+      return;
+    }
+
+    if (!PROMO_CODES.includes(code)) {
+      status.textContent = "Invalid code.";
+      return;
+    }
+
+    if (usedCodes.includes(code)) {
+      status.textContent = "This code has already been used.";
+      return;
+    }
+
+    // ✅ Code valid and unused
+    usedCodes.push(code);
+    localStorage.setItem("usedPromoCodes", JSON.stringify(usedCodes));
+
+    canPublish = true;
+    document.getElementById("publishBtn").disabled = false;
+    document.getElementById("paypal-container").style.display = "none";
+    status.textContent = "Code accepted. You can publish one message.";
+  }
+
+  /* =======================
+     PUBLISH
+  ======================= */
   function publishMessage() {
-    if (!selectedLatLng) return alert("Selecciona una ubicación.");
-    if (!canPublish) return alert("Debes pagar o usar un código.");
-    alert("Mensaje enviado (simulado).");
+    if (!selectedLatLng) {
+      alert("Select a location on the map.");
+      return;
+    }
+    if (!canPublish) {
+      alert("Pay or use a valid promo code.");
+      return;
+    }
+
+    alert("Message published (simulated).");
   }
 </script>
 
