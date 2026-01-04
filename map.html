@@ -12,30 +12,15 @@
   <script src="https://www.paypal.com/sdk/js?client-id=AX55daDbCKwDRrwqHYXBsV8f0a7zMIWEVLOC1KzS8xo-uKje_G4poVe-_Foww1x00w-NzGrXfOPlBZk-&currency=USD"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { margin: 0; background: black; color: white; overflow: hidden; }
 
-    body {
-      margin: 0;
-      background: black;
-      color: white;
-      overflow: hidden;
-    }
-
-    #map {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-    }
+    #map { position: absolute; inset: 0; z-index: 1; }
 
     .panel {
       position: fixed;
-      top: 0;
-      right: 0;
-      width: 340px;
-      height: 100vh;
+      top: 0; right: 0;
+      width: 340px; height: 100vh;
       background: #0b0b0b;
       padding: 20px 20px 90px;
       z-index: 9999;
@@ -43,10 +28,7 @@
       overflow: hidden;
     }
 
-    h2 {
-      margin: 0 0 20px 0;
-      font-size: 1.4rem;
-    }
+    h2 { margin: 0 0 20px 0; font-size: 1.4rem; }
 
     input, textarea {
       width: 100%;
@@ -59,16 +41,9 @@
       font-size: 0.95rem;
     }
 
-    textarea {
-      resize: none;
-      height: 80px;
-    }
+    textarea { resize: none; height: 80px; }
 
-    .hint {
-      font-size: 0.8rem;
-      opacity: 0.6;
-      margin-bottom: 10px;
-    }
+    .hint { font-size: 0.8rem; opacity: 0.6; margin-bottom: 10px; }
 
     .btn {
       width: 100%;
@@ -79,11 +54,7 @@
       cursor: pointer;
     }
 
-    .btn.secondary {
-      background: #222;
-      color: white;
-      margin-top: 10px;
-    }
+    .btn.secondary { background: #222; color: white; margin-top: 10px; }
 
     #paypal-container {
       height: 52px;
@@ -97,31 +68,28 @@
       font-size: 0.85rem;
       margin-top: 8px;
       min-height: 18px;
-      opacity: 0.85;
+      opacity: 0.9;
     }
+    .status.ok { color: #b7ffb7; }
+    .status.bad { color: #ffb7b7; }
 
     .cta {
       position: absolute;
-      bottom: 0;
-      left: 0;
+      bottom: 0; left: 0;
       width: 100%;
       padding: 16px;
-      background: linear-gradient(
-        to top,
-        rgba(0,0,0,0.95),
-        rgba(0,0,0,0.7),
-        transparent
-      );
+      background: linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.7), transparent);
     }
 
     .cta button {
       width: 100%;
       background: white;
       color: black;
-      font-weight: 700;
+      font-weight: 800;
       font-size: 1rem;
       padding: 14px;
       border-radius: 999px;
+      border: none;
     }
 
     .cta button:disabled {
@@ -148,7 +116,7 @@
 
   <div class="hint">Have a promo code?</div>
   <input id="promoCode" placeholder="Enter code" />
-  <button class="btn secondary" onclick="useCode()">Use code</button>
+  <button class="btn secondary" onclick="applyPromoCode()">Apply code</button>
   <div class="status" id="codeStatus"></div>
 
   <div id="paypal-container"></div>
@@ -163,41 +131,56 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-  /* =======================
-     CONFIG
-  ======================= */
+  /* ================= CONFIG ================= */
   const FIXED_EMOJI = "📍";
 
-  // 👉 CÓDIGOS ACTIVOS
-  const PROMO_CODES = ["TIKTOK", "FREE", "TEST"];
+  // 🔐 TUS CÓDIGOS PROMOCIONALES (1 USO)
+  const PROMO_CODES = [
+    "ST4RLI1",
+    "SOL1X0",
+    "STARVT9",
+    "MO33ON5",
+    "LIGHTRS7",
+    "SKYDD9",
+    "NOVIE2A2",
+    "GIFT4Y8L9",
+    "VI3PP8",
+    "TQET5T0"
+  ];
 
-  /* =======================
-     STATE
-  ======================= */
+  const USED_KEY = "usedPromoCodes_v2";
+
+  /* ================= STATE ================= */
   let selectedLatLng = null;
   let marker = null;
   let canPublish = false;
-  let usedCodes = JSON.parse(localStorage.getItem("usedPromoCodes") || "[]");
+  let promoAppliedCode = null;
 
-  /* =======================
-     MAP
-  ======================= */
+  let usedCodes = JSON.parse(localStorage.getItem(USED_KEY) || "[]");
+
+  const publishBtn = document.getElementById("publishBtn");
+  const paypalContainer = document.getElementById("paypal-container");
+  const codeStatus = document.getElementById("codeStatus");
+  const promoInput = document.getElementById("promoCode");
+
+  /* ================= MAP ================= */
   const map = L.map("map", { zoomControl: false }).setView([20, 0], 2);
   L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png").addTo(map);
 
   map.on("click", e => {
     selectedLatLng = e.latlng;
+
     if (marker) marker.setLatLng(e.latlng);
     else {
       marker = L.marker(e.latlng, {
         icon: L.divIcon({ html: `<div style="font-size:24px;">${FIXED_EMOJI}</div>` })
       }).addTo(map);
     }
+
+    updatePublishState();
   });
 
-  /* =======================
-     PAYPAL
-  ======================= */
+  /* ================= PAYPAL ================= */
   paypal.Buttons({
     createOrder: (data, actions) => {
       return actions.order.create({
@@ -207,49 +190,53 @@
     onApprove: (data, actions) => {
       return actions.order.capture().then(() => {
         canPublish = true;
-        document.getElementById("publishBtn").disabled = false;
-        document.getElementById("codeStatus").textContent =
-          "Payment completed. You can publish.";
+        promoAppliedCode = null;
+        codeStatus.textContent = "Payment completed. You can publish.";
+        codeStatus.className = "status ok";
+        updatePublishState();
       });
     }
   }).render("#paypal-container");
 
-  /* =======================
-     PROMO CODE (1 USE ONLY)
-  ======================= */
-  function useCode() {
-    const input = document.getElementById("promoCode");
-    const status = document.getElementById("codeStatus");
-    const code = input.value.trim().toUpperCase();
+  /* ================= PROMO CODE ================= */
+  function applyPromoCode() {
+    const code = promoInput.value.trim().toUpperCase();
+    codeStatus.className = "status";
 
     if (!code) {
-      status.textContent = "Enter a code.";
+      codeStatus.textContent = "Enter a code.";
+      codeStatus.className = "status bad";
       return;
     }
 
     if (!PROMO_CODES.includes(code)) {
-      status.textContent = "Invalid code.";
+      codeStatus.textContent = "Invalid code.";
+      codeStatus.className = "status bad";
       return;
     }
 
     if (usedCodes.includes(code)) {
-      status.textContent = "This code has already been used.";
+      codeStatus.textContent = "This code has already been used.";
+      codeStatus.className = "status bad";
       return;
     }
 
-    // ✅ Code valid and unused
-    usedCodes.push(code);
-    localStorage.setItem("usedPromoCodes", JSON.stringify(usedCodes));
-
+    promoAppliedCode = code;
     canPublish = true;
-    document.getElementById("publishBtn").disabled = false;
-    document.getElementById("paypal-container").style.display = "none";
-    status.textContent = "Code accepted. You can publish one message.";
+    paypalContainer.style.display = "none";
+
+    codeStatus.textContent = "Code applied ✓ One message unlocked.";
+    codeStatus.className = "status ok";
+
+    updatePublishState();
   }
 
-  /* =======================
-     PUBLISH
-  ======================= */
+  /* ================= ENABLE LOGIC ================= */
+  function updatePublishState() {
+    publishBtn.disabled = !(canPublish && selectedLatLng);
+  }
+
+  /* ================= PUBLISH ================= */
   function publishMessage() {
     if (!selectedLatLng) {
       alert("Select a location on the map.");
@@ -258,6 +245,12 @@
     if (!canPublish) {
       alert("Pay or use a valid promo code.");
       return;
+    }
+
+    if (promoAppliedCode) {
+      usedCodes.push(promoAppliedCode);
+      localStorage.setItem(USED_KEY, JSON.stringify(usedCodes));
+      promoAppliedCode = null;
     }
 
     alert("Message published (simulated).");
